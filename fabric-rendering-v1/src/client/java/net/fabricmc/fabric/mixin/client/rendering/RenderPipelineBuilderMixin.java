@@ -17,31 +17,31 @@
 package net.fabricmc.fabric.mixin.client.rendering;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.pipeline.BindGroupLayout;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.PolygonMode;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import net.neoforged.neoforge.client.stencil.StencilTest;
+import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.PolygonMode;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.ShaderType;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.client.renderer.ShaderDefines;
 import net.minecraft.resources.Identifier;
 
 import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderPipeline;
-import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderPipeline.Snippet;
 import net.fabricmc.fabric.impl.client.rendering.FabricRenderPipelineImpl;
 import net.fabricmc.fabric.impl.client.rendering.FabricRenderPipelineInternals;
 
@@ -66,20 +66,19 @@ class RenderPipelineBuilderMixin implements FabricRenderPipeline.Builder {
 			method = "withSnippet",
 			at = @At("TAIL")
 	)
-	private void copyUsePipelineDrawModeForGuiFromSnippet(RenderPipeline.Snippet snippet, CallbackInfo ci) {
-		((Snippet) (Object) snippet).usePipelineDrawModeForGui().ifPresent(value -> this.usePipelineDrawModeForGui = Optional.of(value));
+	private void copyUsePipelineDrawModeForGuiFromSnippet(RenderPipeline.Snippet snippet, CallbackInfoReturnable<RenderPipeline.Builder> cir) {
+		((FabricRenderPipeline.Snippet) (Object) snippet).usePipelineDrawModeForGui().ifPresent(value -> this.usePipelineDrawModeForGui = Optional.of(value));
 	}
 
 	@WrapOperation(
 			method = "buildSnippet",
 			at = @At(
 					value = "NEW",
-					target = "Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;"
+					target = "Lcom/mojang/renderpearl/api/pipeline/RenderPipeline$Snippet;"
 			)
 	)
 	private RenderPipeline.Snippet copyUsePipelineDrawModeForGuiToSnippet(
-			Optional<Identifier> vertexShader,
-			Optional<Identifier> fragmentShader,
+			Map<ShaderType, Identifier> shaders,
 			Optional<ShaderDefines> shaderDefines,
 			Optional<List<BindGroupLayout>> bindGroupLayouts,
 			@Nullable ColorTargetState[] colorTargetStates,
@@ -89,10 +88,10 @@ class RenderPipelineBuilderMixin implements FabricRenderPipeline.Builder {
 			Optional<Boolean> cull,
 			@Nullable VertexFormat[] vertexFormatPerBuffer,
 			Optional<PrimitiveTopology> vertexFormatMode,
-			Optional<StencilTest> stencilTest,
+			int pushConstantSize,
 			Operation<RenderPipeline.Snippet> original
 	) {
-		return FabricRenderPipelineInternals.withSnippetUsePipelineVertexFormatForGui(() -> original.call(vertexShader, fragmentShader, shaderDefines, bindGroupLayouts, colorTargetStates, activeColorTargetStateCount, depthStencilState, polygonMode, cull, vertexFormatPerBuffer, vertexFormatMode, stencilTest), usePipelineDrawModeForGui);
+		return FabricRenderPipelineInternals.withSnippetUsePipelineVertexFormatForGui(() -> original.call(shaders, shaderDefines, bindGroupLayouts, colorTargetStates, activeColorTargetStateCount, depthStencilState, polygonMode, cull, vertexFormatPerBuffer, vertexFormatMode, pushConstantSize), usePipelineDrawModeForGui);
 	}
 
 	@ModifyReturnValue(

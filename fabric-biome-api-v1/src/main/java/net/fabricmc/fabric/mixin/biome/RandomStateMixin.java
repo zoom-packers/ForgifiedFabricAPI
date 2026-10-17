@@ -21,13 +21,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.core.HolderGetter;
 import net.minecraft.world.level.biome.Climate;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
-import net.minecraft.world.level.levelgen.synth.NormalNoise;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
 
 import net.fabricmc.fabric.impl.biome.MultiNoiseSamplerHooks;
 
@@ -35,10 +33,10 @@ import net.fabricmc.fabric.impl.biome.MultiNoiseSamplerHooks;
 public class RandomStateMixin {
 	@Shadow
 	@Final
-	private Climate.Sampler sampler;
+	private long seed;
 
-	@Inject(method = "<init>", at = @At("TAIL"))
-	private void init(NoiseGeneratorSettings chunkGeneratorSettings, HolderGetter<NormalNoise.NoiseParameters> arg, long seed, CallbackInfo ci) {
-		((MultiNoiseSamplerHooks) (Object) sampler).fabric_setSeed(seed);
+	@Inject(method = "createClimateSampler", at = @At("RETURN"))
+	private void setSeed(SamplerContext context, CallbackInfoReturnable<Climate.Sampler> cir) {
+		((MultiNoiseSamplerHooks) (Object) cir.getReturnValue()).fabric_setSeed(seed);
 	}
 }

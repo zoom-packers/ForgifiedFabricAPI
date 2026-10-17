@@ -16,8 +16,7 @@
 
 package net.fabricmc.fabric.mixin.content.registry.fluid;
 
-import java.util.Map;
-
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import net.neoforged.neoforge.fluids.FluidType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -26,6 +25,8 @@ import net.minecraft.world.entity.EntityFluidInteraction;
 
 @Mixin(EntityFluidInteraction.class)
 public interface EntityFluidInteractionAccessor {
+	// MC 26.3 split the per-fluid tracker into Tracker (height/eyes, keyed by fluid holder)
+	// and CurrentAccumulator (current, keyed by FluidType on NeoForge).
 	@Accessor
-	Map<FluidType, Object> getTrackerByFluid();
+	Reference2ObjectMap<FluidType, Object> getCurrentAccumulators();
 }

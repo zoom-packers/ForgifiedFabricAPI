@@ -19,10 +19,9 @@ package net.fabricmc.fabric.test.model.loading;
 import java.util.function.Supplier;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import org.joml.AxisAngle4f;
+import com.mojang.math.Axis;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
-import org.joml.Quaternionf;
 
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -56,7 +55,7 @@ public class BakedModelRenderLayer<S extends LivingEntityRenderState, M extends 
 	public void submit(PoseStack poseStack, SubmitNodeCollector nodeCollector, int light, S state, float limbAngle, float limbDistance) {
 		BlockStateModel model = modelSupplier.get();
 		poseStack.pushPose();
-		poseStack.mulPose(new Quaternionf(new AxisAngle4f(state.ageInTicks * 0.07F - state.bodyRot * Mth.DEG_TO_RAD, 0, 1, 0)));
+		poseStack.rotate(Axis.YP, state.ageInTicks * 0.07F - state.bodyRot * Mth.DEG_TO_RAD);
 		poseStack.scale(-0.75F, -0.75F, 0.75F);
 		float aboveHead = (float) (Math.sin(state.ageInTicks * 0.08F)) * 0.5F + 0.5F;
 		poseStack.translate(-0.5F, 0.75F + aboveHead, -0.5F);

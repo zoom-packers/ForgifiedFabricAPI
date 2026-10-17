@@ -18,15 +18,18 @@ package net.fabricmc.fabric.test.rendering.client.gui;
 
 import java.util.function.BiFunction;
 
-import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
 
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
@@ -53,7 +56,7 @@ public class GuiRendererNonQuadsTest implements ClientModInitializer {
 							graphics.guiHeight() / 8 + xOffset, graphics.guiHeight() / 8 + yOffset,
 							graphics.guiHeight() / 8 + 16 + xOffset, graphics.guiHeight() / 8 + 16 + yOffset,
 							graphics.guiWidth() / 8 + xOffset, graphics.guiHeight() / 8 + yOffset
-					);
+			);
 
 			graphics.guiRenderState.addGuiElement(testStateCreator.apply(0, 0));
 			// this second triangle should not stretch to include the first triangle's vertex
@@ -63,21 +66,25 @@ public class GuiRendererNonQuadsTest implements ClientModInitializer {
 		});
 	}
 
-	record CustomTestState(Matrix3x2f matrix, ScreenRectangle bounds,
-	                       @Nullable ScreenRectangle scissorArea, int x0, int y0, int x1, int y1,
-	                       int x2, int y2) implements GuiElementRenderState {
+	record CustomTestState(Matrix3x2f matrix, ScreenRectangle bounds, @Nullable ScreenRectangle scissorArea, int x0, int y0, int x1, int y1, int x2, int y2) implements GuiElementRenderState {
 		CustomTestState(Matrix3x2f matrix, @Nullable ScreenRectangle scissorArea, int x0, int y0, int x1, int y1, int x2, int y2) {
 			this(matrix, createTriangleBounds(x0, y0, x1, y1, x2, y2, matrix, scissorArea), scissorArea, x0, y0, x1, y1, x2, y2);
 		}
 
-		private static final RenderPipeline PIPELINE;
+		private static final RenderPipeline PIPELINE = createPipeline();
 
-		static {
-			RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelines.GUI_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath("test", "gui_renderer_non_quads_test"))
-					.withPrimitiveTopology(PrimitiveTopology.TRIANGLE_FAN);
+		private static RenderPipeline createPipeline() {
+			RenderPipeline.Builder builder = RenderPipeline.builder()
+						.withBindGroupLayout(BindGroupLayouts.GLOBALS)
+						.withBindGroupLayout(BindGroupLayouts.PROJECTION)
+						.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
+						.withVertexShader("core/gui")
+						.withFragmentShader("core/gui")
+						.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+						.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+						.withLocation(Identifier.fromNamespaceAndPath("test", "gui_renderer_non_quads_test"));
 			((FabricRenderPipeline.Builder) builder).withUsePipelineDrawModeForGui(true);
-			PIPELINE = builder.build();
+			return builder.withPrimitiveTopology(PrimitiveTopology.TRIANGLE_FAN).build();
 		}
 
 		@Override

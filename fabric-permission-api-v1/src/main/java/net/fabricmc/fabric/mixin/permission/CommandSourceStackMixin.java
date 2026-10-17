@@ -27,7 +27,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.permissions.PermissionSet;
@@ -50,16 +49,16 @@ public abstract class CommandSourceStackMixin implements PermissionContextOwner,
 	@Unique
 	private UUID sourceUuid = Util.NIL_UUID;
 
-	@Inject(method = "<init>(Lnet/minecraft/commands/CommandSource;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec2;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/permissions/PermissionSet;Ljava/lang/String;Lnet/minecraft/network/chat/Component;Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/world/entity/Entity;)V", at = @At("TAIL"))
-	private void storeOriginalSource(CommandSource source, Vec3 position, Vec2 rotation, ServerLevel level, PermissionSet permissions, String textName, Component displayName, MinecraftServer server, Entity entity, CallbackInfo ci) {
+	@Inject(method = "<init>(Lnet/minecraft/commands/CommandSource;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec2;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/permissions/PermissionSet;Lnet/minecraft/commands/CommandSourceStack$NamesProvider;Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/world/entity/Entity;)V", at = @At("TAIL"))
+	private void storeOriginalSource(CommandSource source, Vec3 position, Vec2 rotation, ServerLevel level, PermissionSet permissions, CommandSourceStack.NamesProvider namesProvider, MinecraftServer server, Entity entity, CallbackInfo ci) {
 		this.sourceType = switch (entity) {
-		case Player _ -> PermissionContext.Type.PLAYER;
-		case Entity _ -> PermissionContext.Type.ENTITY;
-		case null -> PermissionContext.Type.SYSTEM;
+			case Player _ -> PermissionContext.Type.PLAYER;
+			case Entity _ -> PermissionContext.Type.ENTITY;
+			case null -> PermissionContext.Type.SYSTEM;
 		};
 		this.sourceUuid = switch (entity) {
-		case Entity _ -> entity.getUUID();
-		case null -> Util.NIL_UUID;
+			case Entity _ -> entity.getUUID();
+			case null -> Util.NIL_UUID;
 		};
 	}
 

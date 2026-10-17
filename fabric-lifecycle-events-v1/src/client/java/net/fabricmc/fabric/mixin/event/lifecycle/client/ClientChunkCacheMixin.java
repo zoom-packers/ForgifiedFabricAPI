@@ -16,9 +16,6 @@
 
 package net.fabricmc.fabric.mixin.event.lifecycle.client;
 
-import java.util.Map;
-import java.util.function.Consumer;
-
 import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,11 +27,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 
@@ -45,12 +40,12 @@ public abstract class ClientChunkCacheMixin {
 	private ClientLevel level;
 
 	@Inject(method = "replaceWithPacketData", at = @At("TAIL"))
-	private void onChunkLoad(int x, int z, FriendlyByteBuf friendlyByteBuf, Map<Heightmap.Types, long[]> highmap, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> consumer, CallbackInfoReturnable<LevelChunk> info) {
+	private void onChunkLoad(int x, int z, ClientboundLevelChunkPacketData chunkData, CallbackInfoReturnable<LevelChunk> info) {
 		ClientChunkEvents.CHUNK_LOAD.invoker().onChunkLoad(this.level, info.getReturnValue());
 	}
 
 	@Inject(method = "replaceWithPacketData", at = @At(value = "NEW", target = "net/minecraft/world/level/chunk/LevelChunk"))
-	private void onChunkUnload(int x, int z, FriendlyByteBuf buf, Map<Heightmap.Types, long[]> highmap, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> consumer, CallbackInfoReturnable<LevelChunk> info, @Local(name = "chunk") LevelChunk chunk) {
+	private void onChunkUnload(int x, int z, ClientboundLevelChunkPacketData chunkData, CallbackInfoReturnable<LevelChunk> info, @Local(name = "chunk") LevelChunk chunk) {
 		if (chunk != null) {
 			ClientChunkEvents.CHUNK_UNLOAD.invoker().onChunkUnload(this.level, chunk);
 		}

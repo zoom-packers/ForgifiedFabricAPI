@@ -77,8 +77,7 @@ public class BrewingStandGameTest {
 		helper.succeed();
 	}
 
-	//@GameTest(templateName = EMPTY_STRUCTURE)
-	// Skip see: https://github.com/FabricMC/fabric/pull/2874
+	@GameTest
 	public void fabricRemainderTest(GameTestHelper helper) {
 		helper.setBlock(POS, Blocks.BREWING_STAND);
 		BrewingStandBlockEntity blockEntity = helper.getBlockEntity(POS, BrewingStandBlockEntity.class);

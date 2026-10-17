@@ -6,7 +6,6 @@ accessible	class	net/minecraft/world/level/biome/Biome$ClimateSettings
 accessible	field	net/minecraft/world/level/biome/Biome	attributes	Lnet/minecraft/world/attribute/EnvironmentAttributeMap;
 mutable	field	net/minecraft/world/level/biome/Biome	attributes	Lnet/minecraft/world/attribute/EnvironmentAttributeMap;
 accessible	field	net/minecraft/world/level/biome/Biome	generationSettings	Lnet/minecraft/world/level/biome/BiomeGenerationSettings;
-accessible	field	net/minecraft/world/level/biome/Biome	mobSettings	Lnet/minecraft/world/level/biome/MobSpawnSettings;
 
 # Biome Weather
 accessible	method	net/minecraft/world/level/biome/Biome$ClimateSettings	<init>	(ZFLnet/minecraft/world/level/biome/Biome$TemperatureModifier;F)V
@@ -17,16 +16,6 @@ accessible	field	net/minecraft/world/level/biome/BiomeSpecialEffects$Builder	fol
 accessible	field	net/minecraft/world/level/biome/BiomeSpecialEffects$Builder	dryFoliageColorOverride	Ljava/util/Optional;
 accessible	field	net/minecraft/world/level/biome/BiomeSpecialEffects$Builder	grassColorOverride	Ljava/util/Optional;
 accessible	field	net/minecraft/world/level/biome/BiomeSpecialEffects$Builder	grassColorModifier	Lnet/minecraft/world/level/biome/BiomeSpecialEffects$GrassColorModifier;
-
-# Spawn Settings / Density
-accessible	field	net/minecraft/world/level/biome/MobSpawnSettings	creatureGenerationProbability	F
-mutable	field	net/minecraft/world/level/biome/MobSpawnSettings	creatureGenerationProbability	F
-accessible	field	net/minecraft/world/level/biome/MobSpawnSettings	spawners	Ljava/util/Map;
-mutable	field	net/minecraft/world/level/biome/MobSpawnSettings	spawners	Ljava/util/Map;
-accessible	field	net/minecraft/world/level/biome/MobSpawnSettings	mobSpawnCosts	Ljava/util/Map;
-mutable	field	net/minecraft/world/level/biome/MobSpawnSettings	mobSpawnCosts	Ljava/util/Map;
-
-accessible	method	net/minecraft/world/level/biome/MobSpawnSettings$MobSpawnCost	<init>	(DD)V
 
 # Generation Settings
 accessible	field	net/minecraft/world/level/biome/BiomeGenerationSettings	carvers	Lnet/minecraft/core/HolderSet;

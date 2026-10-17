@@ -36,15 +36,17 @@ import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
+import net.minecraft.world.level.storage.loot.entries.NestedLootTable;
 import net.minecraft.world.level.storage.loot.functions.SetEnchantmentsFunction;
 import net.minecraft.world.level.storage.loot.functions.SetNameFunction;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.ExplosionCondition;
-import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
+import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProviders;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
@@ -112,6 +114,12 @@ public class LootTest implements ModInitializer {
 			if (Blocks.WOOL.yellow().getLootTable().orElse(null) == key) {
 				tableBuilder.modifyPools(poolBuilder -> poolBuilder.add(LootItem.lootTableItem(Items.EMERALD)));
 			}
+
+			// Modify pink wool to drop *either* pink wool or armadillo scutes by adding
+			// armadillo shedding to the same loot pool.
+			if (Blocks.WOOL.pink().getLootTable().orElse(null) == key) {
+				tableBuilder.modifyPools(poolBuilder -> poolBuilder.add(NestedLootTable.lootTableReference(provider.getOrThrow(BuiltInLootTables.ARMADILLO_SHED))));
+			}
 		});
 
 		LootTableEvents.MODIFY.register((key, tableBuilder, source, provider) -> {
@@ -121,7 +129,7 @@ public class LootTest implements ModInitializer {
 				lure.ifPresent((lureEnchantment) -> tableBuilder.withPool(LootPool.lootPool().add(
 						LootItem.lootTableItem(Items.FISHING_ROD)
 				).apply(
-						new SetEnchantmentsFunction.Builder().withEnchantment(lureEnchantment, ConstantValue.exactly(1))
+						new SetEnchantmentsFunction.Builder().withEnchantment(lureEnchantment, ContextIntProviders.exactly(1))
 				)));
 			}
 		});
@@ -142,7 +150,7 @@ public class LootTest implements ModInitializer {
 				return;
 			}
 
-			ItemInstance tool = Objects.requireNonNull(context.getOptionalParameter(LootContextParams.TOOL), "LootContext contains tool, but it was null");
+			ItemInstance tool = Objects.requireNonNull(context.getOptional(LootContextParams.TOOL), "LootContext contains tool, but it was null");
 
 			if (!tool.is(Items.DIAMOND_PICKAXE)) {
 				return;

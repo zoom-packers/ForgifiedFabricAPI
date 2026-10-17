@@ -18,7 +18,6 @@ package net.fabricmc.fabric.test.rendering.client;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Hud;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -29,13 +28,17 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
+import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
+import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotComparisonOptions;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudStatusBarHeightRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.mixin.client.rendering.HudAccessor;
 
-public class HudStatusBarHeightsTest implements ClientModInitializer {
+public class HudStatusBarHeightsTest implements ClientModInitializer, FabricClientGameTest {
 	private static final Identifier HEART_CONTAINER_TEXTURE = Identifier.withDefaultNamespace("hud/heart/container");
 	private static final Identifier HEART_HALF_TEXTURE = Identifier.withDefaultNamespace("hud/heart/absorbing_half");
 	private static final Identifier HEART_FULL_TEXTURE = Identifier.withDefaultNamespace("hud/heart/absorbing_full");
@@ -61,6 +64,7 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 		testArmorBar();
 		testToughnessBar();
 		testStaminaBar();
+		testReplacers();
 	}
 
 	private static void testHealthBar() {
@@ -135,6 +139,7 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 
 	private static void testStaminaBar() {
 		// register a stamina bar showing above the vanilla food bar
+		// 20 pixels to test bars of different heights
 		Identifier id = Identifier.fromNamespaceAndPath("fabric-rendering-v1-testmod", "stamina_bar");
 		HudElementRegistry.attachElementAfter(VanillaHudElements.FOOD_BAR,
 				id,
@@ -148,10 +153,8 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 						if (((HudAccessor) hud).fabric$callGetHeartCount(livingEntity) == 0) {
 							int width = graphics.guiWidth() / 2 + 91;
 							int height = graphics.guiHeight() - HudStatusBarHeightRegistry.getHeight(id);
-							extractStamina(graphics,
-									((HudAccessor) hud).fabric$callGetCameraPlayer(),
-									height,
-									width);
+							extractStamina(graphics, ((HudAccessor) hud).fabric$callGetCameraPlayer(), height, width);
+							extractStamina(graphics, ((HudAccessor) hud).fabric$callGetCameraPlayer(), height + 10, width);
 						}
 					}
 				});
@@ -163,7 +166,7 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 				LivingEntity livingEntity = ((HudAccessor) hud).fabric$callGetRiddenEntity();
 
 				if (((HudAccessor) hud).fabric$callGetHeartCount(livingEntity) == 0) {
-					return 10;
+					return 20;
 				}
 			}
 
@@ -172,7 +175,7 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 	}
 
 	/**
-	 * @see Gui#extractArmor(GuiGraphicsExtractor, Player, int, int, int, int)
+	 * @see Hud#extractArmor(GuiGraphicsExtractor, Player, int, int, int, int)
 	 */
 	private static void extractHealth(GuiGraphicsExtractor graphics, Player player, int y, int heartRows, int height, int x) {
 		int l = Mth.floor(player.getHealth());
@@ -196,7 +199,7 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 	}
 
 	/**
-	 * @see Gui#extractArmor(GuiGraphicsExtractor, Player, int, int, int, int)
+	 * @see Hud#extractArmor(GuiGraphicsExtractor, Player, int, int, int, int)
 	 */
 	private static void extractArmor(GuiGraphicsExtractor graphics, Player player, int y, int heartRows, int height, int x) {
 		int l = player.getArmorValue();
@@ -219,7 +222,7 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 	}
 
 	/**
-	 * @see Gui#extractArmor(GuiGraphicsExtractor, Player, int, int, int, int)
+	 * @see Hud#extractArmor(GuiGraphicsExtractor, Player, int, int, int, int)
 	 */
 	private static void extractToughness(GuiGraphicsExtractor graphics, Player player, int y, int heartRows, int height, int x) {
 		int i = Mth.floor(player.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
@@ -246,7 +249,7 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 	}
 
 	/**
-	 * @see Gui#extractFood(GuiGraphicsExtractor, Player, int, int)
+	 * @see Hud#extractFood(GuiGraphicsExtractor, Player, int, int)
 	 */
 	private static void extractStamina(GuiGraphicsExtractor graphics, Player player, int y, int x) {
 		int k = player.getFoodData().getFoodLevel();
@@ -262,6 +265,45 @@ public class HudStatusBarHeightsTest implements ClientModInitializer {
 			if (l * 2 + 1 == k) {
 				graphics.blitSprite(RenderPipelines.GUI_TEXTURED, STAMINA_HALF_SPRITE, n, y, 9, 9);
 			}
+		}
+	}
+
+	private static void testReplacers() {
+		Identifier id = Identifier.fromNamespaceAndPath("fabric-rendering-v1-testmod", "height_provider_replacer_test_bar_that_should_never_show_up");
+
+		// Test that height providers can be chained.
+		HudStatusBarHeightRegistry.replaceLeft(VanillaHudElements.HEALTH_BAR, heightProvider -> player -> heightProvider.getStatusBarHeight(player) * 2);
+		HudStatusBarHeightRegistry.replaceLeft(VanillaHudElements.HEALTH_BAR, heightProvider -> player -> heightProvider.getStatusBarHeight(player) / 2);
+		HudStatusBarHeightRegistry.replaceRight(VanillaHudElements.FOOD_BAR, heightProvider -> player -> heightProvider.getStatusBarHeight(player) * 2);
+		HudStatusBarHeightRegistry.replaceRight(VanillaHudElements.FOOD_BAR, heightProvider -> player -> heightProvider.getStatusBarHeight(player) / 2);
+
+		HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR, id, (_, _) -> {
+		});
+		// Test that registering replacers before the height providers work
+		HudStatusBarHeightRegistry.replaceLeft(id, _ -> _ -> 0);
+		HudStatusBarHeightRegistry.replaceRight(id, _ -> _ -> 0);
+		// Register height providers which would move the rest of the hud elements on top,
+		// which should fail the game test if these height providers are not replaced by the replacers above.
+		HudStatusBarHeightRegistry.addLeft(id, _ -> 100);
+		HudStatusBarHeightRegistry.addRight(id, _ -> 100);
+	}
+
+	@Override
+	public void runTest(ClientGameTestContext context) {
+		// Set up required test environment
+		context.getInput().resizeWindow(2048, 1024); // Multiple of 256 to not squish the pixels of 256x overlays.
+		context.runOnClient(client -> {
+			if (client.gui.hud.isHidden()) {
+				client.gui.hud.toggle();
+			}
+
+			client.options.guiScale().set(2);
+		});
+
+		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+			singleplayer.getConnection().waitForChunksRender();
+			context.assertScreenshotEquals(TestScreenshotComparisonOptions.of("hud_status_bar_left").withRegion(842, 906, 162, 60).save());
+			context.assertScreenshotEquals(TestScreenshotComparisonOptions.of("hud_status_bar_right").withRegion(1044, 906, 162, 60).save());
 		}
 	}
 }

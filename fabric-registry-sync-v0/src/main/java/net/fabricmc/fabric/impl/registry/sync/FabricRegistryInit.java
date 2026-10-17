@@ -22,18 +22,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
-import net.neoforged.neoforge.registries.DataPackRegistryEvent;
 import net.neoforged.neoforge.registries.ModifyRegistriesEvent;
+import net.neoforged.neoforge.registries.NewDatapackRegistryEvent;
 import net.neoforged.neoforge.registries.callback.AddCallback;
 
 import net.minecraft.core.RegistrationInfo;
 import net.minecraft.core.Registry;
 import net.minecraft.core.WritableRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
+import net.fabricmc.fabric.api.event.registry.RegistryAttributeHolder;
 import net.fabricmc.fabric.api.event.registry.RegistryEntryAddedCallback;
 import net.fabricmc.fabric.api.event.registry.RegistryIdRemapCallback;
 import net.fabricmc.fabric.mixin.registry.sync.BaseMappedRegistryAccessor;
@@ -48,8 +52,30 @@ public class FabricRegistryInit implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		IEventBus bus = ModLoadingContext.get().getActiveContainer().getEventBus();
-		bus.addListener(DataPackRegistryEvent.NewRegistry.class, DynamicRegistriesImpl::onNewDatapackRegistries);
+		bus.addListener(NewDatapackRegistryEvent.class, DynamicRegistriesImpl::onNewDatapackRegistries);
 		bus.addListener(ModifyRegistriesEvent.class, FabricRegistryInit::injectCallbacks);
+
+		// Registries whose modded entries are recorded per world and validated when the world is opened again
+		// (see RegistryCustomContentState). Mirrors the SAVE_DATA_VALIDATED attributes upstream assigns in this class;
+		// syncing itself is handled by NeoForge, so the SYNCED attributes are not repeated here.
+		for (ResourceKey<?> key : new ResourceKey<?>[] {
+				Registries.FLUID,
+				Registries.MOB_EFFECT,
+				Registries.BLOCK,
+				Registries.ENTITY_TYPE,
+				Registries.ITEM,
+				Registries.POTION,
+				Registries.BLOCK_ENTITY_TYPE,
+				Registries.ATTRIBUTE,
+				Registries.VILLAGER_TYPE,
+				Registries.VILLAGER_PROFESSION,
+				Registries.DATA_COMPONENT_TYPE,
+				Registries.MAP_DECORATION_TYPE,
+				Registries.BIOME,
+				Registries.ENCHANTMENT
+		}) {
+			RegistryAttributeHolder.get(key).addAttribute(RegistryAttribute.SAVE_DATA_VALIDATED);
+		}
 	}
 
 	public static void injectCallbacks(ModifyRegistriesEvent event) {

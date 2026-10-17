@@ -20,14 +20,12 @@ import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
@@ -40,8 +38,8 @@ import net.fabricmc.fabric.impl.transfer.TransferApiImpl;
  */
 public final class FluidVariantAttributes {
 	private static final ApiProviderMap<Fluid, FluidVariantAttributeHandler> HANDLERS = ApiProviderMap.create();
+	// FFAPI: public so that test mods can register the default handler for their fluids
 	public static final FluidVariantAttributeHandler DEFAULT_HANDLER = new FluidVariantAttributeHandler() { };
-	private static volatile boolean coloredVanillaFluidNames = false;
 
 	private FluidVariantAttributes() {
 	}
@@ -57,13 +55,6 @@ public final class FluidVariantAttributes {
 		if (HANDLERS.putIfAbsent(fluid, handler) != null) {
 			throw new IllegalArgumentException("Duplicate handler registration for fluid " + fluid);
 		}
-	}
-
-	/**
-	 * Enable blue- and red-colored names for water and lava respectively.
-	 */
-	public static void enableColoredVanillaFluidNames() {
-		coloredVanillaFluidNames = true;
 	}
 
 	/**
@@ -87,6 +78,22 @@ public final class FluidVariantAttributes {
 	 */
 	public static Component getName(FluidVariant variant) {
 		return getHandlerOrDefault(variant.getFluid()).getName(variant);
+	}
+
+	/**
+	 * Return a colored version the name that should be used for the passed fluid variant.
+	 */
+	public static Component getColoredName(FluidVariant variant) {
+		return getHandlerOrDefault(variant.getFluid()).getColoredName(variant);
+	}
+
+	/**
+	 * Return the associated color of the passed fluid variant.
+	 *
+	 * <p>By default, it's used for the {@link #getColoredName(FluidVariant)} color selection.
+	 */
+	public static int getAssociatedColor(FluidVariant variant) {
+		return getHandlerOrDefault(variant.getFluid()).getAssociatedColor(variant);
 	}
 
 	/**
@@ -169,12 +176,8 @@ public final class FluidVariantAttributes {
 	static {
 		registerInternal(Fluids.WATER, new FluidVariantAttributeHandler() {
 			@Override
-			public Component getName(FluidVariant fluidVariant) {
-				if (coloredVanillaFluidNames) {
-					return Blocks.WATER.getName().setStyle(Style.EMPTY.withColor(ChatFormatting.BLUE));
-				} else {
-					return FluidVariantAttributeHandler.super.getName(fluidVariant);
-				}
+			public int getAssociatedColor(FluidVariant fluidVariant) {
+				return TextColor.BLUE.getValue();
 			}
 
 			@Override
@@ -184,12 +187,8 @@ public final class FluidVariantAttributes {
 		});
 		registerInternal(Fluids.LAVA, new FluidVariantAttributeHandler() {
 			@Override
-			public Component getName(FluidVariant fluidVariant) {
-				if (coloredVanillaFluidNames) {
-					return Blocks.LAVA.getName().setStyle(Style.EMPTY.withColor(ChatFormatting.RED));
-				} else {
-					return FluidVariantAttributeHandler.super.getName(fluidVariant);
-				}
+			public int getAssociatedColor(FluidVariant fluidVariant) {
+				return TextColor.RED.getValue();
 			}
 
 			@Override
@@ -217,4 +216,10 @@ public final class FluidVariantAttributes {
 			}
 		});
 	}
+
+	/**
+	 * @deprecated Use {@link FluidVariantAttributes#getColoredName(FluidVariant)} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	public static void enableColoredVanillaFluidNames() { }
 }

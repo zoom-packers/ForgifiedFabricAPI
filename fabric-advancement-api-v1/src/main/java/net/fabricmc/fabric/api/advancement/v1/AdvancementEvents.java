@@ -16,12 +16,11 @@
 
 package net.fabricmc.fabric.api.advancement.v1;
 
-import java.util.Map;
-
 import org.jspecify.annotations.Nullable;
 
 import net.minecraft.advancements.Advancement;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -91,9 +90,9 @@ public final class AdvancementEvents {
 	/**
 	 * This event can be used for post-processing after all advancements have been loaded, replaced, and modified.
 	 */
-	public static final Event<Loaded> ALL_LOADED = EventFactory.createArrayBacked(Loaded.class, listeners -> (resourceManager, advancements, registries) -> {
+	public static final Event<Loaded> ALL_LOADED = EventFactory.createArrayBacked(Loaded.class, listeners -> (resourceManager, advancementRegistry, registries) -> {
 		for (Loaded listener : listeners) {
-			listener.onAdvancementsLoaded(resourceManager, advancements, registries);
+			listener.onAdvancementsLoaded(resourceManager, advancementRegistry, registries);
 		}
 	});
 
@@ -131,9 +130,9 @@ public final class AdvancementEvents {
 		 * Called when all advancements have been loaded and {@link AdvancementEvents#REPLACE} and {@link AdvancementEvents#MODIFY} have been invoked.
 		 *
 		 * @param resourceManager the server resource manager
-		 * @param advancements    a map of all loaded advancements
+		 * @param advancementRegistry the advancement registry
 		 * @param registries      the dynamic registries of the server
 		 */
-		void onAdvancementsLoaded(ResourceManager resourceManager, Map<Identifier, Advancement> advancements, HolderLookup.Provider registries);
+		void onAdvancementsLoaded(ResourceManager resourceManager, Registry<Advancement> advancementRegistry, HolderLookup.Provider registries);
 	}
 }

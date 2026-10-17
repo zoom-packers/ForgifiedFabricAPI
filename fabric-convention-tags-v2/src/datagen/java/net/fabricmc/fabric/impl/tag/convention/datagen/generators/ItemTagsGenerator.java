@@ -16,19 +16,24 @@
 
 package net.fabricmc.fabric.impl.tag.convention.datagen.generators;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import net.minecraft.core.HolderLookup;
+import net.minecraft.data.tags.BlockItemTagAppender;
 import net.minecraft.data.tags.TagAppender;
 import net.minecraft.references.BlockItemId;
 import net.minecraft.references.BlockItemIds;
 import net.minecraft.references.ItemIds;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockItemTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.ColorCollection;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
+import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockItemTags;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 
@@ -46,6 +51,7 @@ public final class ItemTagsGenerator extends FabricTagsProvider.ItemTagsProvider
 		generateFoodTags();
 		generateDyeTags();
 		generateDyedTags();
+		generateDyeableTags();
 		generateCropAndSeedsTags();
 		generateVillagerJobSites();
 		generateFlowerTags();
@@ -55,149 +61,121 @@ public final class ItemTagsGenerator extends FabricTagsProvider.ItemTagsProvider
 	}
 
 	private void copyItemTags() {
-		copy(ConventionalBlockTags.STONES, ConventionalItemTags.STONES);
-		copy(ConventionalBlockTags.COBBLESTONES, ConventionalItemTags.COBBLESTONES);
-		copy(ConventionalBlockTags.NORMAL_COBBLESTONES, ConventionalItemTags.NORMAL_COBBLESTONES);
-		copy(ConventionalBlockTags.MOSSY_COBBLESTONES, ConventionalItemTags.MOSSY_COBBLESTONES);
-		copy(ConventionalBlockTags.INFESTED_COBBLESTONES, ConventionalItemTags.INFESTED_COBBLESTONES);
-		copy(ConventionalBlockTags.DEEPSLATE_COBBLESTONES, ConventionalItemTags.DEEPSLATE_COBBLESTONES);
-		copy(ConventionalBlockTags.NETHERRACKS, ConventionalItemTags.NETHERRACKS);
-		copy(ConventionalBlockTags.END_STONES, ConventionalItemTags.END_STONES);
-		copy(ConventionalBlockTags.GRAVELS, ConventionalItemTags.GRAVELS);
-		copy(ConventionalBlockTags.OBSIDIANS, ConventionalItemTags.OBSIDIANS);
-		copy(ConventionalBlockTags.NORMAL_OBSIDIANS, ConventionalItemTags.NORMAL_OBSIDIANS);
-		copy(ConventionalBlockTags.CRYING_OBSIDIANS, ConventionalItemTags.CRYING_OBSIDIANS);
-		copy(ConventionalBlockTags.FROGLIGHTS, ConventionalItemTags.FROGLIGHTS);
-		copy(ConventionalBlockTags.BARRELS, ConventionalItemTags.BARRELS);
-		copy(ConventionalBlockTags.WOODEN_BARRELS, ConventionalItemTags.WOODEN_BARRELS);
-		copy(ConventionalBlockTags.BOOKSHELVES, ConventionalItemTags.BOOKSHELVES);
-		copy(ConventionalBlockTags.CHESTS, ConventionalItemTags.CHESTS);
-		copy(ConventionalBlockTags.WOODEN_CHESTS, ConventionalItemTags.WOODEN_CHESTS);
-		copy(ConventionalBlockTags.TRAPPED_CHESTS, ConventionalItemTags.TRAPPED_CHESTS);
-		copy(ConventionalBlockTags.ENDER_CHESTS, ConventionalItemTags.ENDER_CHESTS);
-		copy(ConventionalBlockTags.GLASS_BLOCKS, ConventionalItemTags.GLASS_BLOCKS);
-		copy(ConventionalBlockTags.GLASS_BLOCKS_COLORLESS, ConventionalItemTags.GLASS_BLOCKS_COLORLESS);
-		copy(ConventionalBlockTags.GLASS_BLOCKS_TINTED, ConventionalItemTags.GLASS_BLOCKS_TINTED);
-		copy(ConventionalBlockTags.GLASS_BLOCKS_CHEAP, ConventionalItemTags.GLASS_BLOCKS_CHEAP);
-		copy(ConventionalBlockTags.GLASS_PANES, ConventionalItemTags.GLASS_PANES);
-		copy(ConventionalBlockTags.GLASS_PANES_COLORLESS, ConventionalItemTags.GLASS_PANES_COLORLESS);
+		copy(ConventionalBlockItemTags.STONES);
+		copy(ConventionalBlockItemTags.COBBLESTONES);
+		copy(ConventionalBlockItemTags.NORMAL_COBBLESTONES);
+		copy(ConventionalBlockItemTags.MOSSY_COBBLESTONES);
+		copy(ConventionalBlockItemTags.INFESTED_COBBLESTONES);
+		copy(ConventionalBlockItemTags.DEEPSLATE_COBBLESTONES);
+		copy(ConventionalBlockItemTags.NETHERRACKS);
+		copy(ConventionalBlockItemTags.END_STONES);
+		copy(ConventionalBlockItemTags.GRAVELS);
+		copy(ConventionalBlockItemTags.OBSIDIANS);
+		copy(ConventionalBlockItemTags.NORMAL_OBSIDIANS);
+		copy(ConventionalBlockItemTags.CRYING_OBSIDIANS);
+		copy(ConventionalBlockItemTags.FROGLIGHTS);
+		copy(ConventionalBlockItemTags.BARRELS);
+		copy(ConventionalBlockItemTags.WOODEN_BARRELS);
+		copy(ConventionalBlockItemTags.BOOKSHELVES);
+		copy(ConventionalBlockItemTags.CHESTS);
+		copy(ConventionalBlockItemTags.WOODEN_CHESTS);
+		copy(ConventionalBlockItemTags.TRAPPED_CHESTS);
+		copy(ConventionalBlockItemTags.ENDER_CHESTS);
+		copy(ConventionalBlockItemTags.GLASS_BLOCKS);
+		copy(ConventionalBlockItemTags.GLASS_BLOCKS_COLORLESS);
+		copy(ConventionalBlockItemTags.GLASS_BLOCKS_TINTED);
+		copy(ConventionalBlockItemTags.GLASS_BLOCKS_CHEAP);
+		copy(ConventionalBlockItemTags.GLASS_PANES);
+		copy(ConventionalBlockItemTags.GLASS_PANES_COLORLESS);
 		builder(ConventionalItemTags.SHULKER_BOXES)
 				.add(BlockItemIds.SHULKER_BOX)
 				.addAll(BlockItemIds.DYED_SHULKER_BOX.asList().stream().map(BlockItemId::item));
-		copy(ConventionalBlockTags.GLAZED_TERRACOTTAS, ConventionalItemTags.GLAZED_TERRACOTTAS);
-		copy(ConventionalBlockTags.CONCRETES, ConventionalItemTags.CONCRETES);
+		copy(ConventionalBlockItemTags.GLAZED_TERRACOTTAS);
+		copy(ConventionalBlockItemTags.CONCRETES);
 		builder(ConventionalItemTags.CONCRETE_POWDERS)
 				.addAll(BlockItemIds.CONCRETE_POWDER.asList().stream().map(BlockItemId::item));
 
-		copy(ConventionalBlockTags.BUDDING_BLOCKS, ConventionalItemTags.BUDDING_BLOCKS);
-		copy(ConventionalBlockTags.BUDS, ConventionalItemTags.BUDS);
-		copy(ConventionalBlockTags.CLUSTERS, ConventionalItemTags.CLUSTERS);
+		copy(ConventionalBlockItemTags.BUDDING_BLOCKS);
+		copy(ConventionalBlockItemTags.BUDS);
+		copy(ConventionalBlockItemTags.CLUSTERS);
 
-		copy(ConventionalBlockTags.COLORLESS_SANDS, ConventionalItemTags.COLORLESS_SANDS);
-		copy(ConventionalBlockTags.RED_SANDS, ConventionalItemTags.RED_SANDS);
-		copy(ConventionalBlockTags.SANDS, ConventionalItemTags.SANDS);
+		copy(ConventionalBlockItemTags.COLORLESS_SANDS);
+		copy(ConventionalBlockItemTags.RED_SANDS);
+		copy(ConventionalBlockItemTags.SANDS);
 
-		copy(ConventionalBlockTags.SANDSTONE_BLOCKS, ConventionalItemTags.SANDSTONE_BLOCKS);
-		copy(ConventionalBlockTags.SANDSTONE_SLABS, ConventionalItemTags.SANDSTONE_SLABS);
-		copy(ConventionalBlockTags.SANDSTONE_STAIRS, ConventionalItemTags.SANDSTONE_STAIRS);
-		copy(ConventionalBlockTags.RED_SANDSTONE_BLOCKS, ConventionalItemTags.RED_SANDSTONE_BLOCKS);
-		copy(ConventionalBlockTags.RED_SANDSTONE_SLABS, ConventionalItemTags.RED_SANDSTONE_SLABS);
-		copy(ConventionalBlockTags.RED_SANDSTONE_STAIRS, ConventionalItemTags.RED_SANDSTONE_STAIRS);
-		copy(ConventionalBlockTags.UNCOLORED_SANDSTONE_BLOCKS, ConventionalItemTags.UNCOLORED_SANDSTONE_BLOCKS);
-		copy(ConventionalBlockTags.UNCOLORED_SANDSTONE_SLABS, ConventionalItemTags.UNCOLORED_SANDSTONE_SLABS);
-		copy(ConventionalBlockTags.UNCOLORED_SANDSTONE_STAIRS, ConventionalItemTags.UNCOLORED_SANDSTONE_STAIRS);
+		copy(ConventionalBlockItemTags.SANDSTONE_BLOCKS);
+		copy(ConventionalBlockItemTags.SANDSTONE_SLABS);
+		copy(ConventionalBlockItemTags.SANDSTONE_STAIRS);
+		copy(ConventionalBlockItemTags.RED_SANDSTONE_BLOCKS);
+		copy(ConventionalBlockItemTags.RED_SANDSTONE_SLABS);
+		copy(ConventionalBlockItemTags.RED_SANDSTONE_STAIRS);
+		copy(ConventionalBlockItemTags.UNCOLORED_SANDSTONE_BLOCKS);
+		copy(ConventionalBlockItemTags.UNCOLORED_SANDSTONE_SLABS);
+		copy(ConventionalBlockItemTags.UNCOLORED_SANDSTONE_STAIRS);
 
-		copy(ConventionalBlockTags.STORAGE_BLOCKS, ConventionalItemTags.STORAGE_BLOCKS);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_BONE_MEAL, ConventionalItemTags.STORAGE_BLOCKS_BONE_MEAL);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_COAL, ConventionalItemTags.STORAGE_BLOCKS_COAL);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_COPPER, ConventionalItemTags.STORAGE_BLOCKS_COPPER);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_DIAMOND, ConventionalItemTags.STORAGE_BLOCKS_DIAMOND);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_DRIED_KELP, ConventionalItemTags.STORAGE_BLOCKS_DRIED_KELP);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_EMERALD, ConventionalItemTags.STORAGE_BLOCKS_EMERALD);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_GOLD, ConventionalItemTags.STORAGE_BLOCKS_GOLD);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_IRON, ConventionalItemTags.STORAGE_BLOCKS_IRON);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_LAPIS, ConventionalItemTags.STORAGE_BLOCKS_LAPIS);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_NETHERITE, ConventionalItemTags.STORAGE_BLOCKS_NETHERITE);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_RAW_COPPER, ConventionalItemTags.STORAGE_BLOCKS_RAW_COPPER);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_RAW_GOLD, ConventionalItemTags.STORAGE_BLOCKS_RAW_GOLD);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_RAW_IRON, ConventionalItemTags.STORAGE_BLOCKS_RAW_IRON);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_REDSTONE, ConventionalItemTags.STORAGE_BLOCKS_REDSTONE);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_RESIN, ConventionalItemTags.STORAGE_BLOCKS_RESIN);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_SLIME, ConventionalItemTags.STORAGE_BLOCKS_SLIME);
-		copy(ConventionalBlockTags.STORAGE_BLOCKS_WHEAT, ConventionalItemTags.STORAGE_BLOCKS_WHEAT);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_BONE_MEAL);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_COAL);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_COPPER);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_DIAMOND);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_DRIED_KELP);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_EMERALD);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_GOLD);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_IRON);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_LAPIS);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_NETHERITE);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_RAW_COPPER);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_RAW_GOLD);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_RAW_IRON);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_REDSTONE);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_RESIN);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_SLIME);
+		copy(ConventionalBlockItemTags.STORAGE_BLOCKS_WHEAT);
 
-		copy(ConventionalBlockTags.OVERWORLD_NATURAL_LOGS, ConventionalItemTags.OVERWORLD_NATURAL_LOGS);
-		copy(ConventionalBlockTags.NETHER_NATURAL_LOGS, ConventionalItemTags.NETHER_NATURAL_LOGS);
-		copy(ConventionalBlockTags.NATURAL_LOGS, ConventionalItemTags.NATURAL_LOGS);
-		copy(ConventionalBlockTags.NATURAL_WOODS, ConventionalItemTags.NATURAL_WOODS);
-		copy(ConventionalBlockTags.STRIPPED_LOGS, ConventionalItemTags.STRIPPED_LOGS);
-		copy(ConventionalBlockTags.STRIPPED_WOODS, ConventionalItemTags.STRIPPED_WOODS);
-		copy(ConventionalBlockTags.FENCES, ConventionalItemTags.FENCES);
-		copy(ConventionalBlockTags.WOODEN_FENCES, ConventionalItemTags.WOODEN_FENCES);
-		copy(ConventionalBlockTags.NETHER_BRICK_FENCES, ConventionalItemTags.NETHER_BRICK_FENCES);
-		copy(ConventionalBlockTags.FENCE_GATES, ConventionalItemTags.FENCE_GATES);
-		copy(ConventionalBlockTags.WOODEN_FENCE_GATES, ConventionalItemTags.WOODEN_FENCE_GATES);
+		copy(ConventionalBlockItemTags.OVERWORLD_NATURAL_LOGS);
+		copy(ConventionalBlockItemTags.NETHER_NATURAL_LOGS);
+		copy(ConventionalBlockItemTags.NATURAL_LOGS);
+		copy(ConventionalBlockItemTags.NATURAL_WOODS);
+		copy(ConventionalBlockItemTags.STRIPPED_LOGS);
+		copy(ConventionalBlockItemTags.STRIPPED_WOODS);
+		copy(ConventionalBlockItemTags.FENCES);
+		copy(ConventionalBlockItemTags.WOODEN_FENCES);
+		copy(ConventionalBlockItemTags.NETHER_BRICK_FENCES);
+		copy(ConventionalBlockItemTags.FENCE_GATES);
+		copy(ConventionalBlockItemTags.WOODEN_FENCE_GATES);
 
-		copy(ConventionalBlockTags.BARS, ConventionalItemTags.BARS);
-		copy(ConventionalBlockTags.IRON_BARS, ConventionalItemTags.IRON_BARS);
-		copy(ConventionalBlockTags.COPPER_BARS, ConventionalItemTags.COPPER_BARS);
+		copy(ConventionalBlockItemTags.BARS);
+		copy(ConventionalBlockItemTags.IRON_BARS);
+		copy(ConventionalBlockItemTags.COPPER_BARS);
 
-		copy(ConventionalBlockTags.PUMPKINS, ConventionalItemTags.PUMPKINS);
-		copy(ConventionalBlockTags.NORMAL_PUMPKINS, ConventionalItemTags.NORMAL_PUMPKINS);
-		copy(ConventionalBlockTags.CARVED_PUMPKINS, ConventionalItemTags.CARVED_PUMPKINS);
-		copy(ConventionalBlockTags.JACK_O_LANTERNS_PUMPKINS, ConventionalItemTags.JACK_O_LANTERNS_PUMPKINS);
+		copy(ConventionalBlockItemTags.PUMPKINS);
+		copy(ConventionalBlockItemTags.NORMAL_PUMPKINS);
+		copy(ConventionalBlockItemTags.CARVED_PUMPKINS);
+		copy(ConventionalBlockItemTags.JACK_O_LANTERNS_PUMPKINS);
 	}
 
 	private void generateDyeTags() {
+		ColorCollection<BlockItemTagAppender<Item>> builders = ConventionalItemTags.COLOR_DYES.map(this::builder);
+
+		ColorCollection.zipApply(builders, ItemIds.DYE, BlockItemTagAppender::add);
+
 		builder(ConventionalItemTags.DYES)
-				.addOptionalTag(ConventionalItemTags.WHITE_DYES)
-				.addOptionalTag(ConventionalItemTags.ORANGE_DYES)
-				.addOptionalTag(ConventionalItemTags.MAGENTA_DYES)
-				.addOptionalTag(ConventionalItemTags.LIGHT_BLUE_DYES)
-				.addOptionalTag(ConventionalItemTags.YELLOW_DYES)
-				.addOptionalTag(ConventionalItemTags.LIME_DYES)
-				.addOptionalTag(ConventionalItemTags.PINK_DYES)
-				.addOptionalTag(ConventionalItemTags.GRAY_DYES)
-				.addOptionalTag(ConventionalItemTags.LIGHT_GRAY_DYES)
-				.addOptionalTag(ConventionalItemTags.CYAN_DYES)
-				.addOptionalTag(ConventionalItemTags.PURPLE_DYES)
-				.addOptionalTag(ConventionalItemTags.BLUE_DYES)
-				.addOptionalTag(ConventionalItemTags.BROWN_DYES)
-				.addOptionalTag(ConventionalItemTags.GREEN_DYES)
-				.addOptionalTag(ConventionalItemTags.RED_DYES)
-				.addOptionalTag(ConventionalItemTags.BLACK_DYES);
-		builder(ConventionalItemTags.BLACK_DYES)
-				.add(ItemIds.DYE.black());
-		builder(ConventionalItemTags.BLUE_DYES)
-				.add(ItemIds.DYE.blue());
-		builder(ConventionalItemTags.BROWN_DYES)
-				.add(ItemIds.DYE.brown());
-		builder(ConventionalItemTags.GREEN_DYES)
-				.add(ItemIds.DYE.green());
-		builder(ConventionalItemTags.RED_DYES)
-				.add(ItemIds.DYE.red());
-		builder(ConventionalItemTags.WHITE_DYES)
-				.add(ItemIds.DYE.white());
-		builder(ConventionalItemTags.YELLOW_DYES)
-				.add(ItemIds.DYE.yellow());
-		builder(ConventionalItemTags.LIGHT_BLUE_DYES)
-				.add(ItemIds.DYE.lightBlue());
-		builder(ConventionalItemTags.LIGHT_GRAY_DYES)
-				.add(ItemIds.DYE.lightGray());
-		builder(ConventionalItemTags.LIME_DYES)
-				.add(ItemIds.DYE.lime());
-		builder(ConventionalItemTags.MAGENTA_DYES)
-				.add(ItemIds.DYE.magenta());
-		builder(ConventionalItemTags.ORANGE_DYES)
-				.add(ItemIds.DYE.orange());
-		builder(ConventionalItemTags.PINK_DYES)
-				.add(ItemIds.DYE.pink());
-		builder(ConventionalItemTags.CYAN_DYES)
-				.add(ItemIds.DYE.cyan());
-		builder(ConventionalItemTags.GRAY_DYES)
-				.add(ItemIds.DYE.gray());
-		builder(ConventionalItemTags.PURPLE_DYES)
-				.add(ItemIds.DYE.purple());
+				.addTag(ConventionalItemTags.WHITE_DYES)
+				.addTag(ConventionalItemTags.ORANGE_DYES)
+				.addTag(ConventionalItemTags.MAGENTA_DYES)
+				.addTag(ConventionalItemTags.LIGHT_BLUE_DYES)
+				.addTag(ConventionalItemTags.YELLOW_DYES)
+				.addTag(ConventionalItemTags.LIME_DYES)
+				.addTag(ConventionalItemTags.PINK_DYES)
+				.addTag(ConventionalItemTags.GRAY_DYES)
+				.addTag(ConventionalItemTags.LIGHT_GRAY_DYES)
+				.addTag(ConventionalItemTags.CYAN_DYES)
+				.addTag(ConventionalItemTags.PURPLE_DYES)
+				.addTag(ConventionalItemTags.BLUE_DYES)
+				.addTag(ConventionalItemTags.BROWN_DYES)
+				.addTag(ConventionalItemTags.GREEN_DYES)
+				.addTag(ConventionalItemTags.RED_DYES)
+				.addTag(ConventionalItemTags.BLACK_DYES);
 	}
 
 	private void generateConsumableTags() {
@@ -702,9 +680,9 @@ public final class ItemTagsGenerator extends FabricTagsProvider.ItemTagsProvider
 	}
 
 	private void generateFlowerTags() {
-		copy(ConventionalBlockTags.SMALL_FLOWERS, ConventionalItemTags.SMALL_FLOWERS);
-		copy(ConventionalBlockTags.TALL_FLOWERS, ConventionalItemTags.TALL_FLOWERS);
-		copy(ConventionalBlockTags.FLOWERS, ConventionalItemTags.FLOWERS);
+		copy(ConventionalBlockItemTags.SMALL_FLOWERS);
+		copy(ConventionalBlockItemTags.TALL_FLOWERS);
+		copy(ConventionalBlockItemTags.FLOWERS);
 	}
 
 	private void generateOtherTags() {
@@ -733,8 +711,7 @@ public final class ItemTagsGenerator extends FabricTagsProvider.ItemTagsProvider
 				.add(ItemIds.GUNPOWDER);
 
 		builder(ConventionalItemTags.MUSHROOMS)
-				.add(BlockItemIds.RED_MUSHROOM)
-				.add(BlockItemIds.BROWN_MUSHROOM);
+				.addOptionalTag(ItemTags.MUSHROOMS);
 
 		builder(ConventionalItemTags.NETHER_STARS)
 				.add(ItemIds.NETHER_STAR);
@@ -779,102 +756,20 @@ public final class ItemTagsGenerator extends FabricTagsProvider.ItemTagsProvider
 	}
 
 	private void generateDyedTags() {
-		// Cannot pull entries from block tag because Wall Banners do not have an item form
-		builder(ConventionalItemTags.BLACK_DYED)
-				.add(BlockItemIds.BANNER.black()).add(BlockItemIds.BED.black()).add(BlockItemIds.DYED_CANDLE.black()).add(BlockItemIds.CARPET.black())
-				.add(BlockItemIds.CONCRETE.black()).add(BlockItemIds.CONCRETE_POWDER.black()).add(BlockItemIds.GLAZED_TERRACOTTA.black())
-				.add(BlockItemIds.DYED_SHULKER_BOX.black()).add(BlockItemIds.STAINED_GLASS.black()).add(BlockItemIds.STAINED_GLASS_PANE.black())
-				.add(BlockItemIds.DYED_TERRACOTTA.black()).add(BlockItemIds.WOOL.black()).add(ItemIds.DYED_BUNDLE.black()).add(ItemIds.HARNESS.black());
+		ColorCollection<BlockItemTagAppender<Item>> builders = ConventionalItemTags.COLOR_DYED.map(this::builder);
 
-		builder(ConventionalItemTags.BLUE_DYED)
-				.add(BlockItemIds.BANNER.blue()).add(BlockItemIds.BED.blue()).add(BlockItemIds.DYED_CANDLE.blue()).add(BlockItemIds.CARPET.blue())
-				.add(BlockItemIds.CONCRETE.blue()).add(BlockItemIds.CONCRETE_POWDER.blue()).add(BlockItemIds.GLAZED_TERRACOTTA.blue())
-				.add(BlockItemIds.DYED_SHULKER_BOX.blue()).add(BlockItemIds.STAINED_GLASS.blue()).add(BlockItemIds.STAINED_GLASS_PANE.blue())
-				.add(BlockItemIds.DYED_TERRACOTTA.blue()).add(BlockItemIds.WOOL.blue()).add(ItemIds.DYED_BUNDLE.blue()).add(ItemIds.HARNESS.blue());
+		for (ColorCollection<BlockItemId> colorCollection : List.of(
+				BlockItemIds.BANNER, BlockItemIds.BED, BlockItemIds.DYED_CANDLE, BlockItemIds.CARPET,
+				BlockItemIds.CONCRETE, BlockItemIds.CONCRETE_POWDER, BlockItemIds.GLAZED_TERRACOTTA,
+				BlockItemIds.DYED_SHULKER_BOX, BlockItemIds.STAINED_GLASS, BlockItemIds.STAINED_GLASS_PANE,
+				BlockItemIds.DYED_TERRACOTTA, BlockItemIds.WOOL, BlockItemIds.WOOL_SLAB, BlockItemIds.WOOL_STAIRS)) {
+			ColorCollection.zipApply(builders, colorCollection, BlockItemTagAppender::add);
+		}
 
-		builder(ConventionalItemTags.BROWN_DYED)
-				.add(BlockItemIds.BANNER.brown()).add(BlockItemIds.BED.brown()).add(BlockItemIds.DYED_CANDLE.brown()).add(BlockItemIds.CARPET.brown())
-				.add(BlockItemIds.CONCRETE.brown()).add(BlockItemIds.CONCRETE_POWDER.brown()).add(BlockItemIds.GLAZED_TERRACOTTA.brown())
-				.add(BlockItemIds.DYED_SHULKER_BOX.brown()).add(BlockItemIds.STAINED_GLASS.brown()).add(BlockItemIds.STAINED_GLASS_PANE.brown())
-				.add(BlockItemIds.DYED_TERRACOTTA.brown()).add(BlockItemIds.WOOL.brown()).add(ItemIds.DYED_BUNDLE.brown()).add(ItemIds.HARNESS.brown());
-
-		builder(ConventionalItemTags.CYAN_DYED)
-				.add(BlockItemIds.BANNER.cyan()).add(BlockItemIds.BED.cyan()).add(BlockItemIds.DYED_CANDLE.cyan()).add(BlockItemIds.CARPET.cyan())
-				.add(BlockItemIds.CONCRETE.cyan()).add(BlockItemIds.CONCRETE_POWDER.cyan()).add(BlockItemIds.GLAZED_TERRACOTTA.cyan())
-				.add(BlockItemIds.DYED_SHULKER_BOX.cyan()).add(BlockItemIds.STAINED_GLASS.cyan()).add(BlockItemIds.STAINED_GLASS_PANE.cyan())
-				.add(BlockItemIds.DYED_TERRACOTTA.cyan()).add(BlockItemIds.WOOL.cyan()).add(ItemIds.DYED_BUNDLE.cyan()).add(ItemIds.HARNESS.cyan());
-
-		builder(ConventionalItemTags.GRAY_DYED)
-				.add(BlockItemIds.BANNER.gray()).add(BlockItemIds.BED.gray()).add(BlockItemIds.DYED_CANDLE.gray()).add(BlockItemIds.CARPET.gray())
-				.add(BlockItemIds.CONCRETE.gray()).add(BlockItemIds.CONCRETE_POWDER.gray()).add(BlockItemIds.GLAZED_TERRACOTTA.gray())
-				.add(BlockItemIds.DYED_SHULKER_BOX.gray()).add(BlockItemIds.STAINED_GLASS.gray()).add(BlockItemIds.STAINED_GLASS_PANE.gray())
-				.add(BlockItemIds.DYED_TERRACOTTA.gray()).add(BlockItemIds.WOOL.gray()).add(ItemIds.DYED_BUNDLE.gray()).add(ItemIds.HARNESS.gray());
-
-		builder(ConventionalItemTags.GREEN_DYED)
-				.add(BlockItemIds.BANNER.green()).add(BlockItemIds.BED.green()).add(BlockItemIds.DYED_CANDLE.green()).add(BlockItemIds.CARPET.green())
-				.add(BlockItemIds.CONCRETE.green()).add(BlockItemIds.CONCRETE_POWDER.green()).add(BlockItemIds.GLAZED_TERRACOTTA.green())
-				.add(BlockItemIds.DYED_SHULKER_BOX.green()).add(BlockItemIds.STAINED_GLASS.green()).add(BlockItemIds.STAINED_GLASS_PANE.green())
-				.add(BlockItemIds.DYED_TERRACOTTA.green()).add(BlockItemIds.WOOL.green()).add(ItemIds.DYED_BUNDLE.green()).add(ItemIds.HARNESS.green());
-
-		builder(ConventionalItemTags.LIGHT_BLUE_DYED)
-				.add(BlockItemIds.BANNER.lightBlue()).add(BlockItemIds.BED.lightBlue()).add(BlockItemIds.DYED_CANDLE.lightBlue()).add(BlockItemIds.CARPET.lightBlue())
-				.add(BlockItemIds.CONCRETE.lightBlue()).add(BlockItemIds.CONCRETE_POWDER.lightBlue()).add(BlockItemIds.GLAZED_TERRACOTTA.lightBlue())
-				.add(BlockItemIds.DYED_SHULKER_BOX.lightBlue()).add(BlockItemIds.STAINED_GLASS.lightBlue()).add(BlockItemIds.STAINED_GLASS_PANE.lightBlue())
-				.add(BlockItemIds.DYED_TERRACOTTA.lightBlue()).add(BlockItemIds.WOOL.lightBlue()).add(ItemIds.DYED_BUNDLE.lightBlue()).add(ItemIds.HARNESS.lightBlue());
-
-		builder(ConventionalItemTags.LIGHT_GRAY_DYED)
-				.add(BlockItemIds.BANNER.lightGray()).add(BlockItemIds.BED.lightGray()).add(BlockItemIds.DYED_CANDLE.lightGray()).add(BlockItemIds.CARPET.lightGray())
-				.add(BlockItemIds.CONCRETE.lightGray()).add(BlockItemIds.CONCRETE_POWDER.lightGray()).add(BlockItemIds.GLAZED_TERRACOTTA.lightGray())
-				.add(BlockItemIds.DYED_SHULKER_BOX.lightGray()).add(BlockItemIds.STAINED_GLASS.lightGray()).add(BlockItemIds.STAINED_GLASS_PANE.lightGray())
-				.add(BlockItemIds.DYED_TERRACOTTA.lightGray()).add(BlockItemIds.WOOL.lightGray()).add(ItemIds.DYED_BUNDLE.lightGray()).add(ItemIds.HARNESS.lightGray());
-
-		builder(ConventionalItemTags.LIME_DYED)
-				.add(BlockItemIds.BANNER.lime()).add(BlockItemIds.BED.lime()).add(BlockItemIds.DYED_CANDLE.lime()).add(BlockItemIds.CARPET.lime())
-				.add(BlockItemIds.CONCRETE.lime()).add(BlockItemIds.CONCRETE_POWDER.lime()).add(BlockItemIds.GLAZED_TERRACOTTA.lime())
-				.add(BlockItemIds.DYED_SHULKER_BOX.lime()).add(BlockItemIds.STAINED_GLASS.lime()).add(BlockItemIds.STAINED_GLASS_PANE.lime())
-				.add(BlockItemIds.DYED_TERRACOTTA.lime()).add(BlockItemIds.WOOL.lime()).add(ItemIds.DYED_BUNDLE.lime()).add(ItemIds.HARNESS.lime());
-
-		builder(ConventionalItemTags.MAGENTA_DYED)
-				.add(BlockItemIds.BANNER.magenta()).add(BlockItemIds.BED.magenta()).add(BlockItemIds.DYED_CANDLE.magenta()).add(BlockItemIds.CARPET.magenta())
-				.add(BlockItemIds.CONCRETE.magenta()).add(BlockItemIds.CONCRETE_POWDER.magenta()).add(BlockItemIds.GLAZED_TERRACOTTA.magenta())
-				.add(BlockItemIds.DYED_SHULKER_BOX.magenta()).add(BlockItemIds.STAINED_GLASS.magenta()).add(BlockItemIds.STAINED_GLASS_PANE.magenta())
-				.add(BlockItemIds.DYED_TERRACOTTA.magenta()).add(BlockItemIds.WOOL.magenta()).add(ItemIds.DYED_BUNDLE.magenta()).add(ItemIds.HARNESS.magenta());
-
-		builder(ConventionalItemTags.ORANGE_DYED)
-				.add(BlockItemIds.BANNER.orange()).add(BlockItemIds.BED.orange()).add(BlockItemIds.DYED_CANDLE.orange()).add(BlockItemIds.CARPET.orange())
-				.add(BlockItemIds.CONCRETE.orange()).add(BlockItemIds.CONCRETE_POWDER.orange()).add(BlockItemIds.GLAZED_TERRACOTTA.orange())
-				.add(BlockItemIds.DYED_SHULKER_BOX.orange()).add(BlockItemIds.STAINED_GLASS.orange()).add(BlockItemIds.STAINED_GLASS_PANE.orange())
-				.add(BlockItemIds.DYED_TERRACOTTA.orange()).add(BlockItemIds.WOOL.orange()).add(ItemIds.DYED_BUNDLE.orange()).add(ItemIds.HARNESS.orange());
-
-		builder(ConventionalItemTags.PINK_DYED)
-				.add(BlockItemIds.BANNER.pink()).add(BlockItemIds.BED.pink()).add(BlockItemIds.DYED_CANDLE.pink()).add(BlockItemIds.CARPET.pink())
-				.add(BlockItemIds.CONCRETE.pink()).add(BlockItemIds.CONCRETE_POWDER.pink()).add(BlockItemIds.GLAZED_TERRACOTTA.pink())
-				.add(BlockItemIds.DYED_SHULKER_BOX.pink()).add(BlockItemIds.STAINED_GLASS.pink()).add(BlockItemIds.STAINED_GLASS_PANE.pink())
-				.add(BlockItemIds.DYED_TERRACOTTA.pink()).add(BlockItemIds.WOOL.pink()).add(ItemIds.DYED_BUNDLE.pink()).add(ItemIds.HARNESS.pink());
-
-		builder(ConventionalItemTags.PURPLE_DYED)
-				.add(BlockItemIds.BANNER.purple()).add(BlockItemIds.BED.purple()).add(BlockItemIds.DYED_CANDLE.purple()).add(BlockItemIds.CARPET.purple())
-				.add(BlockItemIds.CONCRETE.purple()).add(BlockItemIds.CONCRETE_POWDER.purple()).add(BlockItemIds.GLAZED_TERRACOTTA.purple())
-				.add(BlockItemIds.DYED_SHULKER_BOX.purple()).add(BlockItemIds.STAINED_GLASS.purple()).add(BlockItemIds.STAINED_GLASS_PANE.purple())
-				.add(BlockItemIds.DYED_TERRACOTTA.purple()).add(BlockItemIds.WOOL.purple()).add(ItemIds.DYED_BUNDLE.purple()).add(ItemIds.HARNESS.purple());
-
-		builder(ConventionalItemTags.RED_DYED)
-				.add(BlockItemIds.BANNER.red()).add(BlockItemIds.BED.red()).add(BlockItemIds.DYED_CANDLE.red()).add(BlockItemIds.CARPET.red())
-				.add(BlockItemIds.CONCRETE.red()).add(BlockItemIds.CONCRETE_POWDER.red()).add(BlockItemIds.GLAZED_TERRACOTTA.red())
-				.add(BlockItemIds.DYED_SHULKER_BOX.red()).add(BlockItemIds.STAINED_GLASS.red()).add(BlockItemIds.STAINED_GLASS_PANE.red())
-				.add(BlockItemIds.DYED_TERRACOTTA.red()).add(BlockItemIds.WOOL.red()).add(ItemIds.DYED_BUNDLE.red()).add(ItemIds.HARNESS.red());
-
-		builder(ConventionalItemTags.WHITE_DYED)
-				.add(BlockItemIds.BANNER.white()).add(BlockItemIds.BED.white()).add(BlockItemIds.DYED_CANDLE.white()).add(BlockItemIds.CARPET.white())
-				.add(BlockItemIds.CONCRETE.white()).add(BlockItemIds.CONCRETE_POWDER.white()).add(BlockItemIds.GLAZED_TERRACOTTA.white())
-				.add(BlockItemIds.DYED_SHULKER_BOX.white()).add(BlockItemIds.STAINED_GLASS.white()).add(BlockItemIds.STAINED_GLASS_PANE.white())
-				.add(BlockItemIds.DYED_TERRACOTTA.white()).add(BlockItemIds.WOOL.white()).add(ItemIds.DYED_BUNDLE.white()).add(ItemIds.HARNESS.white());
-
-		builder(ConventionalItemTags.YELLOW_DYED)
-				.add(BlockItemIds.BANNER.yellow()).add(BlockItemIds.BED.yellow()).add(BlockItemIds.DYED_CANDLE.yellow()).add(BlockItemIds.CARPET.yellow())
-				.add(BlockItemIds.CONCRETE.yellow()).add(BlockItemIds.CONCRETE_POWDER.yellow()).add(BlockItemIds.GLAZED_TERRACOTTA.yellow())
-				.add(BlockItemIds.DYED_SHULKER_BOX.yellow()).add(BlockItemIds.STAINED_GLASS.yellow()).add(BlockItemIds.STAINED_GLASS_PANE.yellow())
-				.add(BlockItemIds.DYED_TERRACOTTA.yellow()).add(BlockItemIds.WOOL.yellow()).add(ItemIds.DYED_BUNDLE.yellow()).add(ItemIds.HARNESS.yellow());
+		for (ColorCollection<ResourceKey<Item>> colorCollection : List.of(
+				ItemIds.DYED_BUNDLE, ItemIds.CUSHION, ItemIds.HARNESS)) {
+			ColorCollection.zipApply(builders, colorCollection, BlockItemTagAppender::add);
+		}
 
 		builder(ConventionalItemTags.DYED)
 				.addTag(ConventionalItemTags.WHITE_DYED)
@@ -893,6 +788,44 @@ public final class ItemTagsGenerator extends FabricTagsProvider.ItemTagsProvider
 				.addTag(ConventionalItemTags.GREEN_DYED)
 				.addTag(ConventionalItemTags.RED_DYED)
 				.addTag(ConventionalItemTags.BLACK_DYED);
+	}
+
+	private void generateDyeableTags() {
+		builder(ConventionalItemTags.UNDYED_SIMPLE_DYEABLE)
+				.add(ItemIds.BUNDLE)
+				.add(BlockItemIds.CANDLE)
+				.add(BlockItemIds.GLASS)
+				.add(BlockItemIds.GLASS_PANE)
+				.add(BlockItemIds.SHULKER_BOX)
+				.add(BlockItemIds.TERRACOTTA);
+
+		builder(ConventionalItemTags.REDYEABLE_SIMPLE_DYEABLE)
+				.addOptionalTag(BlockItemTags.BEDS.item())
+				.addAll(ItemIds.DYED_BUNDLE)
+				.addOptionalTag(ItemTags.CUSHIONS)
+				.addOptionalTag(ItemTags.HARNESSES)
+				.addOptionalTag(BlockItemTags.WOOL.item())
+				.addOptionalTag(BlockItemTags.WOOL_CARPETS.item())
+				.addOptionalTag(BlockItemTags.WOOL_SLABS.item())
+				.addOptionalTag(BlockItemTags.WOOL_STAIRS.item())
+				.addAll(BlockItemIds.DYED_SHULKER_BOX.map(BlockItemId::item));
+
+		builder(ConventionalItemTags.SIMPLE_DYEABLE)
+				.addTag(ConventionalItemTags.UNDYED_SIMPLE_DYEABLE)
+				.addTag(ConventionalItemTags.REDYEABLE_SIMPLE_DYEABLE);
+
+		builder(ConventionalItemTags.DYNAMIC_DYEABLE)
+				.add(ItemIds.LEATHER_HELMET)
+				.add(ItemIds.LEATHER_CHESTPLATE)
+				.add(ItemIds.LEATHER_LEGGINGS)
+				.add(ItemIds.LEATHER_BOOTS)
+				.add(ItemIds.LEATHER_HORSE_ARMOR)
+				.add(ItemIds.WOLF_ARMOR)
+				.add(ItemIds.FIREWORK_STAR);
+
+		builder(ConventionalItemTags.DYEABLE)
+				.addTag(ConventionalItemTags.SIMPLE_DYEABLE)
+				.addTag(ConventionalItemTags.DYNAMIC_DYEABLE);
 	}
 
 	private void generateTagAlias() {

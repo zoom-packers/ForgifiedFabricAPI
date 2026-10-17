@@ -106,7 +106,7 @@ public class SyncGametest implements FabricClientGameTest {
 
 				var villager = new Villager(EntityTypes.VILLAGER, level);
 				villager.setNoAi(true);
-				villager.setInvulnerable(true);
+				villager.setPermanentlyInvulnerable(true);
 				villager.setCustomName(Component.literal("TestVillager"));
 				state.villagerId = villager.getUUID();
 				level.addFreshEntity(villager);

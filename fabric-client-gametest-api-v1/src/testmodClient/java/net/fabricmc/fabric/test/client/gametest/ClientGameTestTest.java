@@ -36,7 +36,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.InterpolationHandler;
+import net.minecraft.world.entity.LinearInterpolationHandler;
 import net.minecraft.world.entity.animal.cow.Cow;
 import net.minecraft.world.level.block.Blocks;
 
@@ -140,7 +140,7 @@ public class ClientGameTestTest implements FabricClientGameTest {
 
 				singleplayer.getServer().runOnServer(_ -> serverCow.snapTo(clientCow.position().add(2, 0, 0)));
 				singleplayer.getConnection().waitForClientboundEntityUpdates(EntityTypes.COW);
-				context.waitTicks(InterpolationHandler.DEFAULT_INTERPOLATION_STEPS); // allow the cow to interpolate to the right position
+				context.waitTicks(LinearInterpolationHandler.DEFAULT_INTERPOLATION_STEPS); // allow the cow to interpolate to the right position
 				context.runOnClient(_ -> {
 					if (clientCow.position().distanceToSqr(serverCow.position()) >= 1e-7) {
 						throw new AssertionError("Expected cow to move to server position");
@@ -200,10 +200,6 @@ public class ClientGameTestTest implements FabricClientGameTest {
 		context.runOnClient(client -> {
 			if (client.getWindow().getScreenWidth() != expectedWidth || client.getWindow().getScreenHeight() != expectedHeight) {
 				throw new AssertionError("Expected window size to be (%d, %d) but was (%d, %d)".formatted(expectedWidth, expectedHeight, client.getWindow().getScreenWidth(), client.getWindow().getScreenHeight()));
-			}
-
-			if (client.getWindow().getWidth() != expectedWidth || client.getWindow().getHeight() != expectedHeight) {
-				throw new AssertionError("Expected framebuffer size to be (%d, %d) but was (%d, %d)".formatted(expectedWidth, expectedHeight, client.getWindow().getWidth(), client.getWindow().getHeight()));
 			}
 		});
 

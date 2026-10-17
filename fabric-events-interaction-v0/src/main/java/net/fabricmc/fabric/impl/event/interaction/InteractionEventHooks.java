@@ -53,6 +53,11 @@ public final class InteractionEventHooks {
 	@SubscribeEvent
 	public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
 		if (event.getAction() == PlayerInteractEvent.LeftClickBlock.Action.START) {
+			// Neo fires this before vanilla's range check on the server; skip out-of-range attacks like upstream does.
+			if (!event.getLevel().isClientSide() && (!event.getEntity().isWithinBlockInteractionRange(event.getPos(), 1.0) || !event.getLevel().isInWorldBounds(event.getPos()))) {
+				return;
+			}
+
 			InteractionResult result = AttackBlockCallback.EVENT.invoker().interact(event.getEntity(), event.getLevel(), event.getHand(), event.getPos(), event.getFace());
 			if (result != InteractionResult.PASS) {
 				// Returning true will spawn particles and trigger the animation of the hand -> only for SUCCESS.

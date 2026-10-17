@@ -35,6 +35,7 @@ import net.minecraft.server.network.ServerCommonPacketListenerImpl;
 
 import net.fabricmc.fabric.api.networking.v1.context.PacketContext;
 import net.fabricmc.fabric.api.networking.v1.context.PacketContextProvider;
+import net.fabricmc.fabric.impl.networking.AbstractNetworkAddon;
 import net.fabricmc.fabric.impl.networking.PacketListenerExtensions;
 import net.fabricmc.fabric.impl.networking.server.ServerConfigurationNetworkAddon;
 import net.fabricmc.fabric.impl.networking.server.ServerPlayNetworkAddon;
@@ -88,5 +89,10 @@ public abstract class ServerCommonPacketListenerImplMixin implements PacketListe
 	@Override
 	public PacketContext getPacketContext() {
 		return this.connection.getPacketContext();
+	}
+
+	@Override
+	public AbstractNetworkAddon<?> getAddon() {
+		throw new UnsupportedOperationException("getAddon() must be implemented in the packet listener implementation");
 	}
 }

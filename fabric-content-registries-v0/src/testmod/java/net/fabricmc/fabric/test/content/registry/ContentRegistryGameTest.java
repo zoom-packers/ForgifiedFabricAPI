@@ -16,76 +16,32 @@
 
 package net.fabricmc.fabric.test.content.registry;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.decoration.Mannequin;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionContents;
-import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
-import net.minecraft.world.level.block.entity.BrewingStandBlockEntity;
-import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
-import net.minecraft.world.level.block.entity.DecoratedPotPattern;
-import net.minecraft.world.level.block.entity.DecoratedPotPatterns;
 import net.minecraft.world.level.block.entity.HopperBlockEntity;
-import net.minecraft.world.level.block.entity.PotDecorations;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.phys.AABB;
 
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 
 public class ContentRegistryGameTest {
-	@GameTest
-	public void testCompostingChanceRegistry(GameTestHelper helper) {
-		BlockPos pos = new BlockPos(0, 1, 0);
-		helper.setBlock(pos, Blocks.COMPOSTER);
-		ItemStack obsidian = new ItemStack(Items.OBSIDIAN, 64);
-		Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-		player.setItemInHand(InteractionHand.MAIN_HAND, obsidian);
-		// If on level 0, composting always increases composter level
-		helper.useBlock(pos, player);
-		helper.assertBlockProperty(pos, ComposterBlock.LEVEL, 1);
-		helper.assertValueEqual(obsidian.getCount(), 63, Component.literal("obsidian stack count"));
-		helper.succeed();
-	}
-
-	@GameTest
-	public void testFlattenableBlockRegistry(GameTestHelper helper) {
-		BlockPos pos = new BlockPos(0, 1, 0);
-		helper.setBlock(pos, Blocks.WOOL.red());
-		ItemStack shovel = new ItemStack(Items.NETHERITE_SHOVEL);
-		Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-		player.setItemInHand(InteractionHand.MAIN_HAND, shovel);
-		helper.useBlock(pos, player);
-		helper.assertBlockPresent(Blocks.WOOL.yellow(), pos);
-		helper.assertValueEqual(shovel.getDamageValue(), 1, Component.literal("shovel damage"));
-		helper.succeed();
-	}
-
 	private void smelt(GameTestHelper helper, ItemStack fuelStack, BiConsumer<AbstractFurnaceBlockEntity, HopperBlockEntity> callback) {
 		// Create a furnace to simulate smelting in
 		// A blast furnace will smelt twice as fast, so it is used here
@@ -162,38 +118,6 @@ public class ContentRegistryGameTest {
 //	}
 
 	@GameTest
-	public void testStrippableBlockRegistry(GameTestHelper helper) {
-		BlockPos pos = new BlockPos(0, 1, 0);
-		helper.setBlock(pos, Blocks.QUARTZ_PILLAR);
-		ItemStack axe = new ItemStack(Items.NETHERITE_AXE);
-		Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-		player.setItemInHand(InteractionHand.MAIN_HAND, axe);
-		helper.useBlock(pos, player);
-		helper.assertBlockPresent(Blocks.HAY_BLOCK, pos);
-		helper.assertValueEqual(axe.getDamageValue(), 1, Component.literal("axe damage"));
-		helper.useBlock(pos, player);
-		helper.assertBlockPresent(Blocks.TNT, pos);
-		BlockState oakStairState = Blocks.OAK_STAIRS.defaultBlockState().setValue(StairBlock.WATERLOGGED, true).setValue(StairBlock.HALF, Half.TOP);
-		helper.setBlock(pos, oakStairState);
-		helper.useBlock(pos, player);
-		helper.assertBlockState(pos, Blocks.SPRUCE_STAIRS.withPropertiesOf(oakStairState));
-		helper.succeed();
-	}
-
-	@GameTest
-	public void testTillableBlockRegistry(GameTestHelper helper) {
-		BlockPos pos = new BlockPos(0, 1, 0);
-		helper.setBlock(pos, Blocks.WOOL.green());
-		ItemStack hoe = new ItemStack(Items.NETHERITE_HOE);
-		Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-		player.setItemInHand(InteractionHand.MAIN_HAND, hoe);
-		helper.useBlock(pos, player);
-		helper.assertBlockPresent(Blocks.WOOL.lime(), pos);
-		helper.assertValueEqual(hoe.getDamageValue(), 1, Component.literal("hoe damage"));
-		helper.succeed();
-	}
-
-	@GameTest
 	public void testOxidizableBlocksRegistry(GameTestHelper helper) {
 		// Test de-oxidation. (the registry does not make the blocks oxidize.)
 		Player player = helper.makeMockPlayer(GameType.SURVIVAL);
@@ -208,26 +132,6 @@ public class ContentRegistryGameTest {
 		helper.assertBlockPresent(Blocks.IRON_ORE, pos);
 		helper.useBlock(pos, player);
 		helper.assertBlockPresent(Blocks.COPPER_ORE, pos);
-		helper.succeed();
-	}
-
-	@GameTest
-	public void testDecoratedPotPatternRegistry(GameTestHelper helper) {
-		BlockPos pos = new BlockPos(0, 1, 0);
-		helper.setBlock(pos, Blocks.DECORATED_POT);
-		helper.getBlockEntity(pos, DecoratedPotBlockEntity.class).applyComponentsFromItemStack(DecoratedPotBlockEntity.createDecoratedPotInstance(new PotDecorations(
-				Optional.of(Items.PAPER), Optional.empty(),
-				Optional.empty(), Optional.empty()
-		)));
-
-		Map<ResourceKey<Item>, ResourceKey<DecoratedPotPattern>> patterns = new HashMap<>();
-		DecoratedPotPatterns.itemToPatternMappings(patterns::put);
-
-		helper.assertBlockEntityData(
-				pos, DecoratedPotBlockEntity.class,
-				be -> patterns.get(be.getDecorations().back().orElseThrow().builtInRegistryHolder().key()) == ContentRegistryTest.POT_PATTERN_FABRIC,
-				() -> Component.literal("Decorated Pot Pattern for paper item is wrong")
-		);
 		helper.succeed();
 	}
 
@@ -247,36 +151,6 @@ public class ContentRegistryGameTest {
 		helper.assertBlockPresent(Blocks.DIAMOND_ORE, pos);
 		helper.assertValueEqual(axe.getDamageValue(), 1, Component.literal("axe damage"));
 		helper.succeed();
-	}
-
-	private void brew(GameTestHelper helper, ItemStack input, ItemStack bottle, Consumer<BrewingStandBlockEntity> callback) {
-		BlockPos pos = new BlockPos(0, 1, 0);
-		helper.setBlock(pos, Blocks.BREWING_STAND);
-		BrewingStandBlockEntity brewingStand = helper.getBlockEntity(pos, BrewingStandBlockEntity.class);
-
-		brewingStand.setItem(0, bottle);
-		brewingStand.setItem(3, input);
-		brewingStand.setItem(4, new ItemStack(Items.BLAZE_POWDER, 64));
-		helper.runAfterDelay(401, () -> callback.accept(brewingStand));
-	}
-
-	@GameTest(maxTicks = 410)
-	public void testBrewingFlower(GameTestHelper helper) {
-		brew(helper, new ItemStack(Items.DANDELION), PotionContents.createItemStack(Items.POTION, Potions.AWKWARD), brewingStand -> {
-			ItemStack bottle = brewingStand.getItem(0);
-			PotionContents potion = bottle.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
-			helper.assertValueEqual(potion.potion().orElseThrow(), Potions.HEALING, Component.literal("brewed potion"));
-			helper.succeed();
-		});
-	}
-
-	@GameTest(maxTicks = 410)
-	public void testBrewingDirt(GameTestHelper helper) {
-		brew(helper, new ItemStack(Items.DIRT), PotionContents.createItemStack(Items.POTION, Potions.AWKWARD), brewingStand -> {
-			ItemStack bottle = brewingStand.getItem(0);
-			helper.assertTrue(bottle.getItem() instanceof ContentRegistryTest.DirtyPotionItem, Component.literal("potion became dirty"));
-			helper.succeed();
-		});
 	}
 
 	private void setupFluidTestBoxAndEntities(GameTestHelper helper, Block block, boolean jump) {

@@ -81,7 +81,7 @@ public final class BlockTest implements ModInitializer {
 			if (!fluid.is(TEST_FLUID_KEY)) return true;
 
 			if (level.getBlockState(position.below()).is(Blocks.BLUE_ICE)) { // Check we are above blue ice
-				level.setBlock(position, Blocks.ICE.defaultBlockState(), Block.UPDATE_ALL);
+				level.setBlockAndUpdate(position, Blocks.ICE.defaultBlockState());
 				level.playSound(null, position, SoundEvents.GLASS_PLACE, SoundSource.BLOCKS, 1, 1);
 				return false;
 			} else if (level.getBlockState(position.below()).is(Blocks.MAGMA_BLOCK)) { // Check we are above magma block
@@ -89,7 +89,7 @@ public final class BlockTest implements ModInitializer {
 				// Not updating the block state here would likely be a bug in a mod, but it allows us to test specific behavior in the game tests.
 				return false;
 			} else if (level.getFluidState(position).is(FluidTags.WATER)) { // Check we are in water
-				level.setBlock(position, Blocks.BLACKSTONE.defaultBlockState(), Block.UPDATE_ALL);
+				level.setBlockAndUpdate(position, Blocks.BLACKSTONE.defaultBlockState());
 				level.playSound(null, position, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 1, 1);
 				return false;
 			}

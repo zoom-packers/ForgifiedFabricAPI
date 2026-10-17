@@ -26,8 +26,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ItemInHandRenderer;
-import net.minecraft.client.resources.model.ModelManager;
 
 import net.fabricmc.fabric.impl.client.rendering.LevelRendererExtensions;
 

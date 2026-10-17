@@ -6,6 +6,7 @@
     "BaseMappedRegistryAccessor",
     "BaseMappedRegistryMixin",
     "MappedRegistryAccessor",
+    "MinecraftServerMixin",
     "RegistryDataLoaderMixin",
     "RegistryManagerAccessor",
     "RegistryMixin"

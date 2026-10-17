@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -125,18 +126,18 @@ public final class ModPackResourcesUtil {
 		if (array == null) return;
 
 		switch (array.getType()) {
-		case STRING -> modIds.add(array.getAsString());
-		case ARRAY -> {
-			for (CustomValue id : array.getAsArray()) {
-				if (id.getType() == CustomValue.CvType.STRING) {
-					modIds.add(id.getAsString());
+			case STRING -> modIds.add(array.getAsString());
+			case ARRAY -> {
+				for (CustomValue id : array.getAsArray()) {
+					if (id.getType() == CustomValue.CvType.STRING) {
+						modIds.add(id.getAsString());
+					}
 				}
 			}
-		}
-		default -> {
-			LOGGER.error("[Fabric] {} should be a string or an array", order.jsonKey);
-			return;
-		}
+			default -> {
+				LOGGER.error("[Fabric] {} should be a string or an array", order.jsonKey);
+				return;
+			}
 		}
 
 		modIds.stream().filter(allIds::contains).forEach(modId -> sorter.addLoadOrdering(modId, currentId, order));
@@ -249,12 +250,18 @@ public final class ModPackResourcesUtil {
 				continue;
 			}
 
-			try (PackResources pack = profile.open()) {
-				if (pack instanceof ModNioPackResources nioPack && nioPack.getActivationType().isEnabledByDefault()) {
-					enabled.add(profile.getId());
-				} else {
-					disabled.add(profile.getId());
+			boolean enabledByDefault = false;
+
+			try (Stream<PackResources> packs = profile.open()) {
+				for (PackResources pack : packs.toList()) {
+					enabledByDefault |= isEnabledByDefault(pack);
 				}
+			}
+
+			if (enabledByDefault) {
+				enabled.add(profile.getId());
+			} else {
+				disabled.add(profile.getId());
 			}
 		}
 
@@ -262,6 +269,12 @@ public final class ModPackResourcesUtil {
 				new DataPackConfig(enabled, disabled),
 				FeatureFlags.DEFAULT_FLAGS
 		);
+	}
+
+	private static boolean isEnabledByDefault(PackResources pack) {
+		try (pack) {
+			return pack instanceof ModNioPackResources nioPack && nioPack.getActivationType().isEnabledByDefault();
+		}
 	}
 
 	/**

@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 import com.google.common.base.Preconditions;
 import com.mojang.blaze3d.platform.InputConstants;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLKeyboard;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -53,7 +53,7 @@ public final class TestInputImpl implements TestInput {
 	}
 
 	public static boolean isKeyDown(int keyCode) {
-		return KEYS_DOWN.contains(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
+		return KEYS_DOWN.contains(InputConstants.Type.KEYBOARD.getOrCreate(keyCode));
 	}
 
 	public void clearKeysDown() {
@@ -85,7 +85,7 @@ public final class TestInputImpl implements TestInput {
 		Preconditions.checkNotNull(key, "key");
 
 		if (KEYS_DOWN.add(key)) {
-			context.runOnClient(client -> pressOrReleaseKey(client, key, GLFW.GLFW_PRESS));
+			context.runOnClient(client -> pressOrReleaseKey(client, key, InputConstants.PRESS));
 		}
 	}
 
@@ -93,7 +93,7 @@ public final class TestInputImpl implements TestInput {
 	public void holdKey(int keyCode) {
 		ThreadingImpl.checkOnGametestThread("holdKey");
 
-		holdKey(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
+		holdKey(InputConstants.Type.KEYBOARD.getOrCreate(keyCode));
 	}
 
 	@Override
@@ -107,7 +107,7 @@ public final class TestInputImpl implements TestInput {
 	public void holdControl() {
 		ThreadingImpl.checkOnGametestThread("holdControl");
 
-		holdKey(IS_MACOS ? InputConstants.KEY_LSUPER : InputConstants.KEY_LCONTROL);
+		holdKey(IS_MACOS ? InputConstants.KEY_LGUI : InputConstants.KEY_LCONTROL);
 	}
 
 	@Override
@@ -147,7 +147,7 @@ public final class TestInputImpl implements TestInput {
 		Preconditions.checkNotNull(key, "key");
 
 		if (KEYS_DOWN.remove(key)) {
-			context.runOnClient(client -> pressOrReleaseKey(client, key, GLFW.GLFW_RELEASE));
+			context.runOnClient(client -> pressOrReleaseKey(client, key, InputConstants.RELEASE));
 		}
 	}
 
@@ -155,7 +155,7 @@ public final class TestInputImpl implements TestInput {
 	public void releaseKey(int keyCode) {
 		ThreadingImpl.checkOnGametestThread("releaseKey");
 
-		releaseKey(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
+		releaseKey(InputConstants.Type.KEYBOARD.getOrCreate(keyCode));
 	}
 
 	@Override
@@ -169,7 +169,7 @@ public final class TestInputImpl implements TestInput {
 	public void releaseControl() {
 		ThreadingImpl.checkOnGametestThread("releaseControl");
 
-		releaseKey(IS_MACOS ? InputConstants.KEY_LSUPER : InputConstants.KEY_LCONTROL);
+		releaseKey(IS_MACOS ? InputConstants.KEY_LGUI : InputConstants.KEY_LCONTROL);
 	}
 
 	@Override
@@ -188,9 +188,8 @@ public final class TestInputImpl implements TestInput {
 
 	private static void pressOrReleaseKey(Minecraft client, InputConstants.Key key, int action) {
 		switch (key.getType()) {
-		case KEYSYM -> ((KeyboardHandlerAccessor) client.keyboardHandler).invokeKeyPress(client.getWindow().handle(), action, new KeyEvent(key.getValue(), 0, 0));
-		case SCANCODE -> ((KeyboardHandlerAccessor) client.keyboardHandler).invokeKeyPress(client.getWindow().handle(), action, new KeyEvent(GLFW.GLFW_KEY_UNKNOWN, key.getValue(), 0));
-		case MOUSE -> ((MouseHandlerAccessor) client.mouseHandler).invokeOnButton(client.getWindow().handle(), new MouseButtonInfo(key.getValue(), 0), action);
+			case KEYBOARD -> ((KeyboardHandlerAccessor) client.keyboardHandler).invokeKeyPress(client.getWindow().handle(), action, new KeyEvent(key.getValue(), SDLKeyboard.SDL_GetKeyFromScancode(key.getValue(), (short) 0, false), 0));
+			case MOUSE -> ((MouseHandlerAccessor) client.mouseHandler).invokeOnButton(client.getWindow().handle(), new MouseButtonInfo(key.getValue(), 0), action);
 		}
 	}
 
@@ -225,7 +224,7 @@ public final class TestInputImpl implements TestInput {
 	public void pressKey(int keyCode) {
 		ThreadingImpl.checkOnGametestThread("pressKey");
 
-		pressKey(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
+		pressKey(InputConstants.Type.KEYBOARD.getOrCreate(keyCode));
 	}
 
 	@Override
@@ -270,7 +269,7 @@ public final class TestInputImpl implements TestInput {
 		ThreadingImpl.checkOnGametestThread("holdKeyFor");
 		Preconditions.checkArgument(ticks >= 0, "ticks cannot be negative");
 
-		holdKeyFor(InputConstants.Type.KEYSYM.getOrCreate(keyCode), ticks);
+		holdKeyFor(InputConstants.Type.KEYBOARD.getOrCreate(keyCode), ticks);
 	}
 
 	@Override
@@ -341,7 +340,9 @@ public final class TestInputImpl implements TestInput {
 	public void setCursorPos(double x, double y) {
 		ThreadingImpl.checkOnGametestThread("setCursorPos");
 
-		context.runOnClient(client -> ((MouseHandlerAccessor) client.mouseHandler).invokeOnMove(client.getWindow().handle(), x, y));
+		context.runOnClient(client -> ((MouseHandlerAccessor) client.mouseHandler).invokeOnMove(
+				client.getWindow().handle(), x, y, x - client.mouseHandler.xpos(), y - client.mouseHandler.ypos()
+		));
 	}
 
 	@Override
@@ -351,7 +352,7 @@ public final class TestInputImpl implements TestInput {
 		context.runOnClient(client -> {
 			double newX = client.mouseHandler.xpos() + deltaX;
 			double newY = client.mouseHandler.ypos() + deltaY;
-			((MouseHandlerAccessor) client.mouseHandler).invokeOnMove(client.getWindow().handle(), newX, newY);
+			((MouseHandlerAccessor) client.mouseHandler).invokeOnMove(client.getWindow().handle(), newX, newY, deltaX, deltaY);
 		});
 	}
 

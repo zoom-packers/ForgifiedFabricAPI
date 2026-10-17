@@ -19,6 +19,7 @@ package net.fabricmc.fabric.test.datagen;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -28,6 +29,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -36,9 +39,11 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProvider;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
@@ -80,9 +85,22 @@ public class DataGeneratorTestContent implements ModInitializer {
 			TEST_DATAGEN_DYNAMIC_REGISTRY_KEY,
 			Identifier.fromNamespaceAndPath(MOD_ID, "tinier_potato")
 	);
+	public static final ResourceKey<ContextIntProvider> TEST_NUMBER_PROVIDER_KEY = ResourceKey.create(
+			Registries.CONTEXT_INT_PROVIDER,
+			Identifier.fromNamespaceAndPath(MOD_ID, "tiniest_potato")
+	);
 	// Empty registry
 	public static final ResourceKey<Registry<TestDatagenObject>> TEST_DATAGEN_DYNAMIC_EMPTY_REGISTRY_KEY =
 			ResourceKey.createRegistryKey(Identifier.fromNamespaceAndPath("fabric", "test_datagen_dynamic_empty"));
+	// Reloadable registry
+	public static final ResourceKey<Registry<TestDatagenObject>> TEST_DATAGEN_RELOADABLE_REGISTRY_KEY =
+			ResourceKey.createRegistryKey(Identifier.fromNamespaceAndPath("fabric", "test_datagen_reloadable"));
+	public static final ResourceKey<TestDatagenObject> TEST_RELOADABLE_REGISTRY_ITEM_KEY = ResourceKey.create(
+			TEST_DATAGEN_RELOADABLE_REGISTRY_KEY,
+			Identifier.fromNamespaceAndPath(MOD_ID, "cuttlefish")
+	);
+
+	public static Holder<Potion> HASTE_POTION;
 
 	public static final TagKey<SoundEvent> EQUIP_SOUNDS = TagKey.create(Registries.SOUND_EVENT, Identifier.fromNamespaceAndPath(MOD_ID, "test_equip_sounds"));
 
@@ -94,7 +112,7 @@ public class DataGeneratorTestContent implements ModInitializer {
 		BLOCK_WITH_VANILLA_LOOT_TABLE = createBlock(BLOCK_WITH_VANILLA_LOOT_TABLE_KEY, BlockBehaviour.Properties.of().overrideLootTable(Blocks.STONE.getLootTable()));
 		BLOCK_THAT_DROPS_NOTHING = createBlock(BLOCK_THAT_DROPS_NOTHING_KEY, BlockBehaviour.Properties.of().noLootTable());
 
-		SIMPLE_ENTITY_TYPE = createEntityType(SIMPLE_ENTITY_TYPE_KEY, EntityType.Builder.createNothing(MobCategory.MISC));
+		SIMPLE_ENTITY_TYPE = createEntityType(SIMPLE_ENTITY_TYPE_KEY, EntityType.Builder.createNothing(MobCategory.MONSTER));
 		ENTITY_TYPE_WITHOUT_LOOT_TABLE = createEntityType(ENTITY_TYPE_WITHOUT_LOOT_TABLE_KEY, EntityType.Builder.createNothing(MobCategory.MISC));
 
 		CreativeModeTabEvents.modifyOutputEvent(SIMPLE_ITEM_GROUP).register(entries -> entries.accept(SIMPLE_BLOCK));
@@ -108,6 +126,9 @@ public class DataGeneratorTestContent implements ModInitializer {
 
 		DynamicRegistries.register(TEST_DATAGEN_DYNAMIC_REGISTRY_KEY, TestDatagenObject.CODEC);
 		DynamicRegistries.register(TEST_DATAGEN_DYNAMIC_EMPTY_REGISTRY_KEY, TestDatagenObject.CODEC);
+		DynamicRegistries.registerReloadable(TEST_DATAGEN_RELOADABLE_REGISTRY_KEY, TestDatagenObject.CODEC);
+
+		HASTE_POTION = Registry.registerForHolder(BuiltInRegistries.POTION, Identifier.fromNamespaceAndPath(MOD_ID, "haste"), new Potion("haste", new MobEffectInstance(MobEffects.HASTE, 900)));
 	}
 
 	private static BlockItemId createBlockItemId(String name) {

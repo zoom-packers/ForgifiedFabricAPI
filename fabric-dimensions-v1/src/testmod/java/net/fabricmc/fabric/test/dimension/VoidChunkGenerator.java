@@ -17,12 +17,15 @@
 package net.fabricmc.fabric.test.dimension;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import org.jspecify.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryOps;
@@ -40,6 +43,7 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
 
 public class VoidChunkGenerator extends ChunkGenerator {
 	public static final MapCodec<VoidChunkGenerator> CODEC = RecordCodecBuilder.mapCodec((instance) ->
@@ -56,14 +60,6 @@ public class VoidChunkGenerator extends ChunkGenerator {
 	}
 
 	@Override
-	public void applyCarvers(WorldGenRegion worldGenRegion, long seed, RandomState randomState, BiomeManager biomeManager, StructureManager structureManager, ChunkAccess chunk) {
-	}
-
-	@Override
-	public void buildSurface(WorldGenRegion region, StructureManager structureManager, RandomState randomState, ChunkAccess chunk) {
-	}
-
-	@Override
 	public void spawnOriginalMobs(WorldGenRegion region) {
 	}
 
@@ -73,7 +69,7 @@ public class VoidChunkGenerator extends ChunkGenerator {
 	}
 
 	@Override
-	public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState randomState, StructureManager structureManager, ChunkAccess chunk) {
+	public CompletableFuture<ChunkAccess> buildTerrain(ChunkAccess chunk, Blender blender, RandomState randomState, StructureManager structureManager, BiomeManager biomeManager, @Nullable WorldGenRegion carverBiomeRegion, Set<Holder<Biome>> possibleBiomes) {
 		return CompletableFuture.completedFuture(chunk);
 	}
 
@@ -98,6 +94,6 @@ public class VoidChunkGenerator extends ChunkGenerator {
 	}
 
 	@Override
-	public void addDebugScreenInfo(List<String> list, RandomState randomState, BlockPos blockPos) {
+	public void addDebugScreenInfo(List<String> list, RandomState randomState, BlockPos blockPos, SamplerContext samplerContext) {
 	}
 }

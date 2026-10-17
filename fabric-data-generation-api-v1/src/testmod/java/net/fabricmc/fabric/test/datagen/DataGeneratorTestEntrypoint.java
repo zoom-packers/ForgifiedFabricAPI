@@ -25,45 +25,55 @@ import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.SIMPLE_B
 import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.SIMPLE_ENTITY_TYPE;
 import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.SIMPLE_ITEM_GROUP;
 import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.TEST_DATAGEN_DYNAMIC_REGISTRY_KEY;
+import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.TEST_DATAGEN_RELOADABLE_REGISTRY_KEY;
 import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.TEST_DYNAMIC_REGISTRY_EXTRA_ITEM_KEY;
 import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.TEST_DYNAMIC_REGISTRY_ITEM_KEY;
+import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.TEST_NUMBER_PROVIDER_KEY;
+import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.TEST_RELOADABLE_REGISTRY_ITEM_KEY;
 import static net.fabricmc.fabric.test.datagen.DataGeneratorTestContent.TEST_SOUND;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.neoforged.neoforge.common.extensions.ITagAppenderExtension;
 
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementType;
+import net.minecraft.advancements.triggers.InventoryChangeTrigger;
 import net.minecraft.advancements.triggers.KilledTrigger;
+import net.minecraft.advancements.triggers.RecipeUnlockedTrigger;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.Registry;
 import net.minecraft.core.RegistrySetBuilder;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.MultiRegistryBootstrap;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.codec.RegistryCodecs;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeCategory;
-import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
+import net.minecraft.data.registries.RegistriesDatapackGenerator;
 import net.minecraft.data.registries.RegistryPatchGenerator;
 import net.minecraft.data.tags.TagsProvider;
 import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.network.chat.Component;
 import net.minecraft.references.BlockItemIds;
 import net.minecraft.resources.Identifier;
-import net.minecraft.resources.RegistryFixedCodec;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -73,8 +83,14 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.trading.TradeCost;
+import net.minecraft.world.item.trading.TradeSet;
+import net.minecraft.world.item.trading.VillagerTrade;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
@@ -85,9 +101,10 @@ import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.minecraft.world.level.storage.loot.predicates.LootItemBlockStatePropertyCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
+import net.minecraft.world.level.storage.loot.predicates.MatchBlock;
+import net.minecraft.world.level.storage.loot.providers.number.ints.ConstantValue;
+import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProviders;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
@@ -96,6 +113,7 @@ import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.JsonKeySortOrderCallback;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricAdvancementProvider;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricBlockLootSubProvider;
+import net.fabricmc.fabric.api.datagen.v1.provider.FabricBrewingProvider;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricCodecDataProvider;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricDynamicRegistryProvider;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricEntityLootSubProvider;
@@ -112,6 +130,8 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 	private static final ResourceCondition ALWAYS_LOADED = ResourceConditions.alwaysTrue();
 	private static final ResourceCondition NEVER_LOADED = ResourceConditions.alwaysFalse();
 
+	private static final ResourceKey<Recipe<?>> POTATO_DUPLICATION_RECIPE = ResourceKey.create(Registries.RECIPE, Identifier.fromNamespaceAndPath("fabric-data-gen-api-v1-testmod", "test/potato_duplication"));
+
 	@Override
 	public void addJsonKeySortOrders(JsonKeySortOrderCallback callback) {
 		callback.add("trigger", 0);
@@ -121,6 +141,8 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 	public void onInitializeDataGenerator(FabricDataGenerator dataGenerator) {
 		final FabricDataGenerator.Pack pack = dataGenerator.createPack();
 
+		addRegistryEntries(pack, dataGenerator.getWorldRegistries(), dataGenerator.getRegistries());
+
 		pack.addProvider(TestRecipeProvider::new);
 		pack.addProvider(TestAdvancementProvider::new);
 		pack.addProvider(TestBlockLootSubProvider::new);
@@ -129,6 +151,7 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		pack.addProvider(ExistingEnglishLangProvider::new);
 		pack.addProvider(JapaneseLangProvider::new);
 		pack.addProvider(TestDynamicRegistryProvider::new);
+		pack.addProvider(TestReloadableDynamicRegistryProvider::new);
 		pack.addProvider(TestPredicateProvider::new);
 		pack.addProvider(TestCustomCodecProvider::new);
 
@@ -137,6 +160,10 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		pack.addProvider(TestBiomeTagsProvider::new);
 		pack.addProvider(TestGameEventTagsProvider::new);
 		pack.addProvider(TestVanillaSoundEventTagsProvider::new);
+
+		if (System.getProperty("fabric-data-generation-api-v1.test-failure") != null) {
+			pack.addProvider(TestThrowingDynamicRegistryProvider::new);
+		}
 
 		// TODO replace with a client only entrypoint with FMJ 2
 		if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
@@ -150,7 +177,7 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		}
 
 		FabricDataGenerator.Pack extraPack = dataGenerator.createBuiltinResourcePack(Identifier.fromNamespaceAndPath(MOD_ID, "extra"));
-		CompletableFuture<HolderLookup.Provider> extraRegistriesFuture = RegistryPatchGenerator.createLookup(dataGenerator.getRegistries(), new RegistrySetBuilder()
+		CompletableFuture<HolderLookup.Provider> extraRegistriesFuture = RegistryPatchGenerator.createWorldLookup(dataGenerator.getWorldRegistries(), new RegistrySetBuilder()
 				.add(TEST_DATAGEN_DYNAMIC_REGISTRY_KEY, c ->
 						c.register(TEST_DYNAMIC_REGISTRY_EXTRA_ITEM_KEY, new DataGeneratorTestContent.TestDatagenObject(":tiny_potato:"))
 				)
@@ -167,8 +194,37 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		// do NOT add TEST_DATAGEN_DYNAMIC_EMPTY_REGISTRY_KEY, should still work without it
 	}
 
+	@Override
+	public void buildReloadableRegistry(RegistrySetBuilder registryBuilder) {
+		registryBuilder.add(new MultiRegistryBootstrap() {
+			@Override
+			public Set<ResourceKey<? extends Registry<?>>> requestedRegistries() {
+				return Set.of(Registries.ADVANCEMENT, Registries.RECIPE);
+			}
+
+			@Override
+			public void run(BootstrapGetter registries) {
+				createReloadableRecipeProvider(registries.get(Registries.RECIPE), registries.get(Registries.ADVANCEMENT)).buildRecipes();
+			}
+		});
+	}
+
 	private void bootstrapTestDatagenRegistry(BootstrapContext<DataGeneratorTestContent.TestDatagenObject> context) {
 		context.register(TEST_DYNAMIC_REGISTRY_ITEM_KEY, new DataGeneratorTestContent.TestDatagenObject(":tiny_potato:"));
+	}
+
+	private void addRegistryEntries(
+			FabricDataGenerator.Pack pack, CompletableFuture<HolderLookup.Provider> worldRegistries, CompletableFuture<HolderLookup.Provider> reloadableRegistries
+	) {
+		CompletableFuture<RegistrySetBuilder.PatchedRegistries> extraReloadableRegistries = RegistryPatchGenerator.createReloadableLookup(
+				worldRegistries, reloadableRegistries,
+				new RegistrySetBuilder()
+						.add(TEST_DATAGEN_RELOADABLE_REGISTRY_KEY, b -> {
+							b.register(TEST_RELOADABLE_REGISTRY_ITEM_KEY, new DataGeneratorTestContent.TestDatagenObject("test"));
+						})
+		);
+
+		pack.addProvider((PackOutput o) -> RegistriesDatapackGenerator.forReloadableLayer(o, extraReloadableRegistries.thenApply(RegistrySetBuilder.PatchedRegistries::patches)));
 	}
 
 	private static class TestRecipeProvider extends FabricRecipeProvider {
@@ -177,10 +233,24 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		}
 
 		@Override
-		protected RecipeProvider createRecipeProvider(HolderLookup.Provider registries, RecipeOutput output) {
-			return new RecipeProvider(registries, output) {
+		protected RecipeProvider createRecipeProvider(HolderLookup.Provider registries, BootstrapContext<Recipe<?>> recipes, BootstrapContext<Advancement> advancements) {
+			return new RecipeProvider(recipes, advancements) {
 				@Override
 				public void buildRecipes() {
+					new FabricBrewingProvider(output) {
+						@Override
+						protected void buildMixes() {
+							buildMix(
+									// Input potion.
+									Potions.WATER,
+									// Ingredient
+									SIMPLE_BLOCK.asItem(),
+									// Output potion.
+									DataGeneratorTestContent.HASTE_POTION
+							);
+						}
+					}.buildRecipes();
+
 					planksFromLog(SIMPLE_BLOCK, ItemTags.ACACIA_LOGS, 1);
 
 					shapeless(RecipeCategory.MISC, Items.DIAMOND_ORE, 4).requires(Items.ITEM_FRAME)
@@ -265,6 +335,19 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		public String getName() {
 			return "Test Recipes";
 		}
+	}
+
+	private static RecipeProvider createReloadableRecipeProvider(BootstrapContext<Recipe<?>> recipes, BootstrapContext<Advancement> advancements) {
+		return new RecipeProvider(recipes, advancements) {
+			@Override
+			public void buildRecipes() {
+				shapeless(RecipeCategory.TOOLS, Items.POTATO, 4)
+						.requires(Items.DIRT)
+						.requires(Items.POTATO)
+						.unlockedBy("potato", InventoryChangeTrigger.TriggerInstance.hasItems(Items.POTATO))
+						.save(output, POTATO_DUPLICATION_RECIPE);
+			}
+		};
 	}
 
 	private static class ExistingEnglishLangProvider extends FabricLanguageProvider {
@@ -391,37 +474,47 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		@Override
 		public void generateAdvancement(HolderLookup.Provider registryLookup, Consumer<AdvancementHolder> consumer) {
 			AdvancementHolder root = Advancement.Builder.advancement()
-					.display(
-							SIMPLE_BLOCK,
+					.rootDisplay(
+							SIMPLE_BLOCK.asItem(),
 							Component.translatable("advancements.test.root.title"),
 							Component.translatable("advancements.test.root.description"),
 							Identifier.withDefaultNamespace("textures/gui/advancements/backgrounds/end.png"),
 							AdvancementType.TASK,
 							false, false, false)
 					.addCriterion("killed_something", KilledTrigger.TriggerInstance.playerKilledEntity())
-					.save(consumer, MOD_ID + ":test/root");
+					.save(consumer, Identifier.fromNamespaceAndPath(MOD_ID, "test/root"));
 			AdvancementHolder rootNotLoaded = Advancement.Builder.advancement()
-					.display(
-							SIMPLE_BLOCK,
+					.rootDisplay(
+							SIMPLE_BLOCK.asItem(),
 							Component.translatable("advancements.test.root_not_loaded.title"),
 							Component.translatable("advancements.test.root_not_loaded.description"),
 							Identifier.withDefaultNamespace("textures/gui/advancements/backgrounds/end.png"),
 							AdvancementType.TASK,
 							false, false, false)
 					.addCriterion("killed_something", KilledTrigger.TriggerInstance.playerKilledEntity())
-					.save(withConditions(consumer, NEVER_LOADED), MOD_ID + ":test/root_not_loaded");
+					.save(withConditions(consumer, NEVER_LOADED), Identifier.fromNamespaceAndPath(MOD_ID, "test/root_not_loaded"));
 
 			AdvancementHolder adventureChild = Advancement.Builder.advancement()
-					.display(SIMPLE_BLOCK,
+					.display(SIMPLE_BLOCK.asItem(),
 							Component.translatable("advancements.test.adventure_child.title"),
 							Component.translatable("advancements.test.adventure_child.description"),
-							Identifier.withDefaultNamespace("textures/gui/advancements/backgrounds/end.png"),
 							AdvancementType.GOAL,
 							false, false, false
 					)
 					.addCriterion("killed_something", KilledTrigger.TriggerInstance.playerKilledEntity())
 					.parent(createPlaceholder(Identifier.withDefaultNamespace("adventure/root")))
 					.save(consumer, Identifier.fromNamespaceAndPath(MOD_ID, "test/adventure_child"));
+
+			AdvancementHolder recipeDependent = Advancement.Builder.advancement()
+					.display(Items.POTATO,
+							Component.literal("Potato Duplication Recipe Dependent"),
+							Component.literal("You unlocked the Potato Duplication recipe."),
+							AdvancementType.GOAL,
+							false, false, false
+					)
+					.addCriterion("recipe_unlocked", RecipeUnlockedTrigger.unlocked(registryLookup.getOrThrow(POTATO_DUPLICATION_RECIPE)))
+					.parent(root)
+					.save(consumer, Identifier.fromNamespaceAndPath(MOD_ID, "test/recipe_depentent"));
 		}
 	}
 
@@ -433,7 +526,7 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		@Override
 		public void generate() {
 			// Same condition twice to test recursive condition adding
-			withConditions(ALWAYS_LOADED).withConditions(ResourceConditions.not(NEVER_LOADED)).dropSelf(SIMPLE_BLOCK);
+			withConditions(ALWAYS_LOADED).withConditions(ResourceConditions.not(NEVER_LOADED)).dropWhenSilkTouch(SIMPLE_BLOCK);
 			add(BLOCK_WITHOUT_ITEM, createSingleItemTable(SIMPLE_BLOCK));
 
 			excludeFromStrictValidation(BLOCK_WITHOUT_LOOT_TABLE);
@@ -464,11 +557,17 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 		}
 
 		@Override
+		public void run() {
+			generate((key, builder) -> {
+			});
+		}
+
+		@Override
 		public void generate(BiConsumer<ResourceKey<LootTable>, LootTable.Builder> consumer) {
 			withConditions(consumer, ALWAYS_LOADED).accept(
 					BuiltInLootTables.PIGLIN_BARTERING,
 					LootTable.lootTable().withPool(
-							LootPool.lootPool().setRolls(ConstantValue.exactly(1.0F)).add(LootItem.lootTableItem(SIMPLE_BLOCK))
+							LootPool.lootPool().setRolls(ContextIntProviders.exactly(1)).add(LootItem.lootTableItem(SIMPLE_BLOCK))
 					)
 			);
 		}
@@ -498,6 +597,36 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 	}
 
 	/**
+	 * Tests generating files for a reloadable dynamic registry.
+	 */
+	private static class TestReloadableDynamicRegistryProvider extends FabricDynamicRegistryProvider {
+		private TestReloadableDynamicRegistryProvider(FabricPackOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
+			super(output, registriesFuture);
+		}
+
+		@Override
+		protected void configure(HolderLookup.Provider registries, Entries entries) {
+			registries.lookupOrThrow(Registries.LOOT_TABLE)
+					.getOrThrow(BuiltInLootTables.PIGLIN_BARTERING);
+
+			Advancement vanillaAdvancement = registries.lookupOrThrow(Registries.ADVANCEMENT).getOrThrow(ResourceKey.create(Registries.ADVANCEMENT, Identifier.withDefaultNamespace("recipes/misc/stick"))).value();
+			Advancement.CODEC.encodeStart(registries.createSerializationContext(JsonOps.INSTANCE), vanillaAdvancement).getOrThrow();
+
+			entries.add(
+					TEST_NUMBER_PROVIDER_KEY,
+					new ConstantValue(123)
+			);
+
+			entries.add(registries.getOrThrow(POTATO_DUPLICATION_RECIPE));
+		}
+
+		@Override
+		public String getName() {
+			return "Test Reloadable Dynamic Registry";
+		}
+	}
+
+	/**
 	 * Test generating files for a patched/extended dynamic registry.
 	 */
 	private static class TestExtraDynamicRegistryProvider extends FabricDynamicRegistryProvider {
@@ -523,8 +652,8 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 
 		@Override
 		protected void configure(BiConsumer<Identifier, LootItemCondition> provider, HolderLookup.Provider registryLookup) {
-			provider.accept(Identifier.fromNamespaceAndPath(MOD_ID, "predicate_test"), LootItemBlockStatePropertyCondition.hasBlockStateProperties(
-					Blocks.MELON).build()); // Pretend this actually does something and we cannot access the blocks directly
+			provider.accept(Identifier.fromNamespaceAndPath(MOD_ID, "predicate_test"), MatchBlock.blockMatches(
+					registryLookup.lookupOrThrow(Registries.BLOCK), Blocks.MELON).build()); // Pretend this actually does something and we cannot access the blocks directly
 		}
 
 		@Override
@@ -551,7 +680,7 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 
 		private record Entry(Holder<Biome> biome) {
 			private static final Codec<Entry> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-					RegistryFixedCodec.create(Registries.BIOME).fieldOf("biome").forGetter(Entry::biome)
+					RegistryCodecs.holder(Registries.BIOME).fieldOf("biome").forGetter(Entry::biome)
 			).apply(instance, Entry::new));
 		}
 	}
@@ -582,6 +711,26 @@ public class DataGeneratorTestEntrypoint implements DataGeneratorEntrypoint {
 					.add(key(SoundEvents.ARMOR_EQUIP_DIAMOND))
 					.add(key(SoundEvents.ARMOR_EQUIP_NETHERITE))
 					.add(key(SoundEvents.ARMOR_EQUIP_GENERIC));
+		}
+	}
+
+	private static class TestThrowingDynamicRegistryProvider extends FabricDynamicRegistryProvider {
+		private TestThrowingDynamicRegistryProvider(FabricPackOutput output, CompletableFuture<HolderLookup.Provider> registriesFuture) {
+			super(output, registriesFuture);
+		}
+
+		@Override
+		protected void configure(HolderLookup.Provider registries, Entries entries) {
+			// TradeSet doesn't allow HolderSets with direct holder entries, causing it to fail serializing this object.
+			entries.add(ResourceKey.create(Registries.TRADE_SET, Identifier.fromNamespaceAndPath("fabric-data-gen-api-v1-testmod", "throw")),
+					new TradeSet(HolderSet.direct(Holder.direct(
+							VillagerTrade.builder(new TradeCost(Items.STONE, 1), new ItemStackTemplate(Items.STONE), 1, 1, 1).build()
+					)), ContextIntProviders.exactly(1), false, Optional.empty()));
+		}
+
+		@Override
+		public String getName() {
+			return "Test Throwing Dynamic Registry";
 		}
 	}
 }

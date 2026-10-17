@@ -71,9 +71,9 @@ public abstract class EntityMixin implements EntityFluidExtension, InternalEntit
 		return result;
 	}
 
-	@WrapOperation(method = "updateFluidInteraction", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/EntityFluidInteraction;update(Lnet/minecraft/world/entity/Entity;Ljava/util/function/Predicate;)V"))
-	private void applyCustomFluidCurrent(EntityFluidInteraction interaction, Entity entity, Predicate<FluidType> typePushPredicate, Operation<Void> original) {
-		original.call(interaction, entity, typePushPredicate.or(type -> this.isPushedByFluid() && ContentRegistriesImpl.isCustomFluidType(type)));
+	@WrapOperation(method = "updateFluidInteraction", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/EntityFluidInteraction;update(Lnet/minecraft/world/entity/Entity;Ljava/util/function/Predicate;)Z"))
+	private boolean applyCustomFluidCurrent(EntityFluidInteraction interaction, Entity entity, Predicate<FluidType> typePushPredicate, Operation<Boolean> original) {
+		return original.call(interaction, entity, typePushPredicate.or(type -> this.isPushedByFluid() && ContentRegistriesImpl.isCustomFluidType(type)));
 	}
 
 	@ModifyReturnValue(method = "isInLiquid", at = @At("RETURN"))

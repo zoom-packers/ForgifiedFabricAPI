@@ -1,9 +1,6 @@
 accessible	field	net/minecraft/data/DataGenerator	vanillaPackOutput	Lnet/minecraft/data/PackOutput;
 mutable	field	net/minecraft/data/DataGenerator	vanillaPackOutput	Lnet/minecraft/data/PackOutput;
 
-accessible	class	net/minecraft/data/recipes/RecipeProvider$Runner
-transitive-extendable	method	net/minecraft/data/recipes/RecipeProvider$Runner	run	(Lnet/minecraft/data/CachedOutput;)Ljava/util/concurrent/CompletableFuture;
-
 accessible	field	net/minecraft/data/tags/TagsProvider	builders	Ljava/util/Map;
 
 accessible	field	net/minecraft/data/loot/BlockLootSubProvider	map	Ljava/util/Map;
@@ -22,12 +19,12 @@ accessible	field	net/minecraft/data/PackOutput$PathProvider	kind	Ljava/lang/Stri
 
 extendable	method	net/minecraft/data/DataGenerator$PackGenerator	<init>	(Lnet/minecraft/data/DataGenerator;ZLjava/lang/String;Lnet/minecraft/data/PackOutput;)V
 
-accessible	field	net/minecraft/data/registries/VanillaRegistries	BUILDER	Lnet/minecraft/core/RegistrySetBuilder;
 accessible	method	net/minecraft/data/registries/VanillaRegistries	validateThatAllBiomeFeaturesHaveBiomeFilter	(Lnet/minecraft/core/HolderLookup$Provider;)V
+accessible	field	net/minecraft/data/registries/VanillaRegistries	WORLD_BUILDER	Lnet/minecraft/core/RegistrySetBuilder;
+accessible	field	net/minecraft/data/registries/VanillaRegistries	RELOADABLE_BUILDER	Lnet/minecraft/core/RegistrySetBuilder;
 accessible	field	net/minecraft/core/RegistrySetBuilder	entries	Ljava/util/List;
 accessible	class	net/minecraft/core/RegistrySetBuilder$RegistryStub
-
-accessible	field	net/minecraft/world/level/storage/loot/parameters/LootContextParamSets	REGISTRY	Lcom/google/common/collect/BiMap;
+accessible	method	net/minecraft/core/RegistrySetBuilder$RegistryStub	requiredRegistries	()Ljava/util/stream/Stream;
 
 transitive-accessible	method	net/minecraft/data/BlockFamilies	familyBuilder	(Lnet/minecraft/world/level/block/Block;)Lnet/minecraft/data/BlockFamily$Builder;
 transitive-accessible	field	net/minecraft/client/data/models/BlockModelGenerators	blockStateOutput	Ljava/util/function/Consumer;
@@ -48,10 +45,13 @@ accessible	class	net/minecraft/client/data/models/ModelProvider$ItemInfoCollecto
 accessible	class	net/minecraft/client/data/models/ModelProvider$BlockStateGeneratorCollector
 accessible	field	net/minecraft/client/data/models/ModelProvider$BlockStateGeneratorCollector	generators	Ljava/util/Map;
 
+accessible class net/minecraft/data/recipes/BrewingProvider$ContainerTransformation
+
 transitive-inject-interface net/minecraft/advancements/Advancement$Builder net/fabricmc/fabric/api/datagen/v1/advancement/FabricAdvancementBuilder
 transitive-inject-interface	net/minecraft/data/loot/BlockLootSubProvider	net/fabricmc/fabric/api/datagen/v1/loot/FabricBlockLootSubProvider
 transitive-inject-interface	net/minecraft/data/loot/EntityLootSubProvider	net/fabricmc/fabric/api/datagen/v1/loot/FabricEntityLootSubProvider
 transitive-inject-interface	net/minecraft/data/recipes/RecipeOutput	net/fabricmc/fabric/api/datagen/v1/recipe/FabricRecipeOutput
 transitive-inject-interface	net/minecraft/data/tags/TagAppender	net/fabricmc/fabric/api/datagen/v1/provider/FabricTagAppender<TT;>
+transitive-inject-interface net/minecraft/tags/TagBuilder net/fabricmc/fabric/api/datagen/v1/provider/FabricTagBuilder
 
 ### Generated access wideners below

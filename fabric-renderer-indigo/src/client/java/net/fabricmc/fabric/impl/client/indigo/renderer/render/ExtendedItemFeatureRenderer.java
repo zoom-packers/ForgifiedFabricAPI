@@ -19,15 +19,15 @@ package net.fabricmc.fabric.impl.client.indigo.renderer.render;
 import java.util.List;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import org.jspecify.annotations.Nullable;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 
 import net.minecraft.client.renderer.feature.FeatureFrameContext;
+import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.util.LightCoordsUtil;
 
@@ -49,38 +49,36 @@ public class ExtendedItemFeatureRenderer extends RenderTypeFeatureRenderer<Exten
 			switch (outputType) {
 				case MAIN -> bufferMain(this);
 				case OUTLINE -> bufferOutline(this);
-				case FOIL -> bufferFoil(this);
 			}
 		}
 	};
 
+	private final ItemSheetedDecalTextureGenerator sheetedDecalTextureGenerator = new ItemSheetedDecalTextureGenerator();
+	private final Matrix4f cameraInversePose = new Matrix4f();
+	private final Matrix3f normalInversePose = new Matrix3f();
+
 	private ExtendedItemSubmit submit;
-	private PoseStack.@Nullable Pose foilDecalPose;
+	private boolean isSheetedDecalTextureGeneratorPrepared = false;
 	private OutputType outputType;
 
 	@Override
 	protected void buildGroup(FeatureFrameContext context, List<ExtendedItemSubmit> submits) {
 		for (ExtendedItemSubmit submit : submits) {
-			prepareSubmit(submit, false);
-		}
-
-		for (ExtendedItemSubmit submit : submits) {
-			prepareSubmit(submit, true);
+			prepareSubmit(submit);
 		}
 
 		submit = null;
-		foilDecalPose = null;
+		isSheetedDecalTextureGeneratorPrepared = false;
+		sheetedDecalTextureGenerator.clear();
 	}
 
-	private void prepareSubmit(ExtendedItemSubmit submit, boolean foil) {
+	private void prepareSubmit(ExtendedItemSubmit submit) {
 		this.submit = submit;
 
-		if (foil) {
-			foilDecalPose = null;
-			outputType = OutputType.FOIL;
-		} else if (submit.outlineColor() != 0) {
+		if (submit.outlineColor() != 0) {
 			outputType = OutputType.OUTLINE;
 		} else {
+			isSheetedDecalTextureGeneratorPrepared = false;
 			outputType = OutputType.MAIN;
 		}
 
@@ -112,7 +110,30 @@ public class ExtendedItemFeatureRenderer extends RenderTypeFeatureRenderer<Exten
 			quad.multiplyColor(submit.tintLayers()[tintIndex]);
 		}
 
-		quad.buffer(submit.overlayCoords(), submit.pose(), getVertexBuilder(quad.itemRenderType()));
+		ItemStackRenderState.FoilType quadFoilType = quad.foilType();
+		ItemStackRenderState.FoilType foilType = quadFoilType == null ? submit.foilType() : quadFoilType;
+
+		RenderType renderType = switch (foilType) {
+			case NONE -> quad.itemRenderType();
+			case STANDARD -> quad.itemGlintRenderType();
+			case SPECIAL -> quad.itemGlintSpecialRenderType();
+		};
+
+		VertexConsumer vertexConsumer = getVertexBuilder(renderType);
+
+		if (foilType == ItemStackRenderState.FoilType.SPECIAL) {
+			if (!isSheetedDecalTextureGeneratorPrepared) {
+				PoseStack.Pose foilDecalPose = ItemFeatureRendererAccessor.fabric_computeFoilDecalPose(submit.displayContext(), submit.pose());
+				cameraInversePose.set(foilDecalPose.pose()).invert();
+				normalInversePose.set(foilDecalPose.normal()).invert();
+				sheetedDecalTextureGenerator.prepare(vertexConsumer, cameraInversePose, normalInversePose, ItemFeatureRenderer.SPECIAL_FOIL_TEXTURE_SCALE);
+				isSheetedDecalTextureGeneratorPrepared = true;
+			}
+
+			vertexConsumer = sheetedDecalTextureGenerator;
+		}
+
+		quad.buffer(submit.overlayCoords(), submit.pose(), vertexConsumer);
 	}
 
 	private void bufferOutline(MutableQuadViewImpl quad) {
@@ -125,44 +146,8 @@ public class ExtendedItemFeatureRenderer extends RenderTypeFeatureRenderer<Exten
 		}
 	}
 
-	private void bufferFoil(MutableQuadViewImpl quad) {
-		ItemStackRenderState.FoilType quadFoilType = quad.foilType();
-		ItemStackRenderState.FoilType foilType = quadFoilType == null ? submit.foilType() : quadFoilType;
-
-		if (foilType == ItemStackRenderState.FoilType.NONE) {
-			return;
-		}
-
-		PoseStack.Pose foilDecalPose;
-
-		if (foilType == ItemStackRenderState.FoilType.SPECIAL) {
-			if (this.foilDecalPose == null) {
-				this.foilDecalPose = ItemFeatureRendererAccessor.fabric_computeFoilDecalPose(submit.displayContext(), submit.pose());
-			}
-
-			foilDecalPose = this.foilDecalPose;
-		} else {
-			foilDecalPose = null;
-		}
-
-		VertexConsumer foilBuffer = getFoilBuffer(quad.itemRenderType(), foilDecalPose);
-		quad.buffer(submit.overlayCoords(), submit.pose(), foilBuffer);
-	}
-
-	private VertexConsumer getFoilBuffer(RenderType renderType, PoseStack.@Nullable Pose foilDecalPose) {
-		RenderType foilRenderType = ItemFeatureRendererAccessor.fabric_useTransparentGlint(renderType) ? RenderTypes.glintTranslucent() : RenderTypes.glint();
-		VertexConsumer foilBuffer = getVertexBuilder(foilRenderType);
-
-		if (foilDecalPose != null) {
-			foilBuffer = new SheetedDecalTextureGenerator(foilBuffer, foilDecalPose, 0.0078125F);
-		}
-
-		return foilBuffer;
-	}
-
 	private enum OutputType {
 		MAIN,
-		OUTLINE,
-		FOIL
+		OUTLINE
 	}
 }

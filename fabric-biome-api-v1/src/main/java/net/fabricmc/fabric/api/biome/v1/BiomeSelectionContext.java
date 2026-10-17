@@ -21,11 +21,12 @@ import java.util.Optional;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.dimension.LevelStem;
-import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
@@ -43,9 +44,18 @@ public interface BiomeSelectionContext {
 	Holder<Biome> getBiomeHolder();
 
 	/**
+	 * Returns the {@link RegistryAccess} of the level the biomes are being modified for.
+	 *
+	 * <p>This is the same registry access that backs the lookups used by the other methods on this
+	 * context, and can be used to look up any registry entry (biomes, placed features, carvers,
+	 * structures, tags, etc.) while selecting and modifying biomes.
+	 */
+	RegistryAccess getRegistryAccess();
+
+	/**
 	 * Returns true if this biome contains a placed feature referencing a configured feature with the given key.
 	 */
-	default boolean hasFeature(ResourceKey<ConfiguredFeature<?, ?>> key) {
+	default boolean hasFeature(ResourceKey<Feature> key) {
 		List<HolderSet<PlacedFeature>> featureSteps = getBiome().getGenerationSettings().features();
 
 		for (HolderSet<PlacedFeature> featureSuppliers : featureSteps) {
@@ -81,7 +91,7 @@ public interface BiomeSelectionContext {
 	 * current feature list. May be empty if the configured feature is not registered, or does not come
 	 * from this biomes feature list.
 	 */
-	Optional<ResourceKey<ConfiguredFeature<?, ?>>> getFeatureKey(ConfiguredFeature<?, ?> configuredFeature);
+	Optional<ResourceKey<Feature>> getFeatureKey(Feature feature);
 
 	/**
 	 * Tries to retrieve the resource key for the given placed feature, which should be from this biomes

@@ -18,14 +18,15 @@ package net.fabricmc.fabric.mixin.resource;
 
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
@@ -51,15 +52,15 @@ abstract class PackMixin implements FabricPack {
 
 	@Shadow
 	public abstract PackLocationInfo location();
-	
+
 	@Inject(method = "<init>(Lnet/minecraft/server/packs/PackLocationInfo;Lnet/minecraft/server/packs/repository/Pack$ResourcesSupplier;Lnet/minecraft/server/packs/repository/Pack$Metadata;Lnet/minecraft/server/packs/PackSelectionConfig;Ljava/util/List;)V", at = @At("TAIL"))
 	private void PackMixin(CallbackInfo ci) {
 		this.parentsPredicate = DEFAULT_PARENT_PREDICATE;
 	}
 
-	@Inject(method = "open", at = @At("RETURN"))
-	private void onCreateResourcePack(CallbackInfoReturnable<PackResources> cir) {
-		PackSourceTracker.setSource(cir.getReturnValue(), location().source());
+	@ModifyReturnValue(method = "open", at = @At("RETURN"))
+	private Stream<PackResources> onCreateResourcePack(Stream<PackResources> packs) {
+		return packs.peek(pack -> PackSourceTracker.setSource(pack, location().source()));
 	}
 
 	@Override

@@ -21,6 +21,7 @@ import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.clock.ClockTimeMarkers;
 import net.minecraft.world.clock.WorldClock;
@@ -38,7 +39,7 @@ public class FabricDimensionClientTest implements FabricClientGameTest {
 	public void runTest(ClientGameTestContext context) {
 		DimensionEvents.MODIFY_ATTRIBUTES.register((dimension, attributes, _) -> {
 			if (dimension.is(BuiltinDimensionTypes.OVERWORLD)) {
-				attributes.set(EnvironmentAttributes.CLOUD_COLOR, PURPLE);
+				attributes.set(EnvironmentAttributes.CLOUD_COLOR, ARGB.vector4fFromARGB32(PURPLE));
 			}
 		});
 
@@ -47,7 +48,7 @@ public class FabricDimensionClientTest implements FabricClientGameTest {
 				ServerLevel level = spContext.getConnection().getServerLevel();
 				Optional<Holder<WorldClock>> defaultClock = level.dimensionType().defaultClock();
 				level.getServer().clockManager().moveToTimeMarker(defaultClock.get(), ClockTimeMarkers.NOON);
-				int overworldCloudColor = level.environmentAttributes().getValue(EnvironmentAttributes.CLOUD_COLOR, BlockPos.ZERO);
+				int overworldCloudColor = ARGB.colorFromVector4f(level.environmentAttributes().getValue(EnvironmentAttributes.CLOUD_COLOR, BlockPos.ZERO));
 
 				if (overworldCloudColor != PURPLE) {
 					throw new AssertionError("Expected overworld cloud color to be (%d) but was (%d)".formatted(PURPLE, overworldCloudColor));

@@ -48,7 +48,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
+import net.minecraft.world.level.levelgen.carver.WorldCarver;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
@@ -83,7 +83,7 @@ public abstract class FabricDynamicRegistryProvider implements DataProvider {
 		@ApiStatus.Internal
 		Entries(HolderLookup.Provider registries, String modId) {
 			this.registries = registries;
-			this.queuedEntries = DynamicRegistries.getWorldRegistries().stream()
+			this.queuedEntries = DynamicRegistries.getAllDynamicRegistries().stream()
 					// Some modded dynamic registries might not be in the wrapper lookup, filter them out
 					.filter(e -> registries.lookup(e.key()).isPresent())
 					.collect(Collectors.toMap(
@@ -115,10 +115,10 @@ public abstract class FabricDynamicRegistryProvider implements DataProvider {
 		}
 
 		/**
-		 * Returns a lookup for configured carvers. Useful when creating biomes.
+		 * Returns a lookup for carvers. Useful when creating biomes.
 		 */
-		public HolderGetter<ConfiguredWorldCarver<?>> configuredCarvers() {
-			return getLookup(Registries.CONFIGURED_CARVER);
+		public HolderGetter<WorldCarver> configuredCarvers() {
+			return getLookup(Registries.CARVER);
 		}
 
 		/**
@@ -284,7 +284,7 @@ public abstract class FabricDynamicRegistryProvider implements DataProvider {
 
 	private static <E> CompletableFuture<?> writeToPath(Path path, CachedOutput cache, DynamicOps<JsonElement> json, Encoder<E> encoder, E value, @Nullable ResourceCondition[] conditions) {
 		Optional<JsonElement> optional = encoder.encodeStart(json, value).resultOrPartial((error) -> {
-			LOGGER.error("Couldn't serialize element {}: {}", path, error);
+			throw new IllegalStateException("Couldn't serialize element " + path + ": " + error);
 		});
 
 		if (optional.isPresent()) {

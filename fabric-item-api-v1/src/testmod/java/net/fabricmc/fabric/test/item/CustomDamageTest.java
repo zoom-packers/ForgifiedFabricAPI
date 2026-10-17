@@ -36,17 +36,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ToolMaterial;
-import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntProviders;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.CustomDamageHandler;
 import net.fabricmc.fabric.api.item.v1.EnchantingContext;
 import net.fabricmc.fabric.api.item.v1.EnchantmentEvents;
-import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
-import net.fabricmc.fabric.api.registry.FuelValueEvents;
 import net.fabricmc.fabric.api.util.TriState;
 
 public class CustomDamageTest implements ModInitializer {
@@ -68,8 +66,6 @@ public class CustomDamageTest implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		Registry.register(BuiltInRegistries.ITEM, WEIRD_PICK_KEY, WEIRD_PICK);
-		FuelValueEvents.BUILD.register((builder, context) -> builder.add(WEIRD_PICK, context.baseSmeltTime()));
-		FabricPotionBrewingBuilder.BUILD.register(builder -> builder.addMix(Potions.WATER, WEIRD_PICK, Potions.AWKWARD));
 		EnchantmentEvents.ALLOW_ENCHANTING.register(((enchantment, target, enchantingContext) -> {
 			if (target.is(Items.DIAMOND_PICKAXE) && enchantment.is(Enchantments.SHARPNESS) && EnchantmentHelper.hasTag(target, EnchantmentTags.MINING_EXCLUSIVE)) {
 				return TriState.TRUE;
@@ -83,9 +79,10 @@ public class CustomDamageTest implements ModInitializer {
 		protected WeirdPick(ResourceKey<Item> resourceKey) {
 			super(buildProperties(resourceKey));
 		}
-		
+
 		private static Item.Properties buildProperties(ResourceKey<Item> resourceKey) {
-			Item.Properties props = new Item.Properties().pickaxe(ToolMaterial.GOLD, 3f, 5f).setId(resourceKey);
+			Item.Properties props = new Item.Properties().pickaxe(ToolMaterial.GOLD, 3f, 5f)
+					.cookingFuel(ContextIntProviders.COOKING_TIME_WOOD_ITEMS_LARGE).setId(resourceKey);
 			((FabricItem.Properties) props).customDamage(WEIRD_DAMAGE_HANDLER);
 			return props;
 		}

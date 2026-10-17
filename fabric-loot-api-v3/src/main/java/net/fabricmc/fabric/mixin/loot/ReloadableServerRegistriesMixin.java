@@ -16,33 +16,26 @@
 
 package net.fabricmc.fabric.mixin.loot;
 
-import java.util.Map;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
-import com.google.gson.JsonElement;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import net.neoforged.neoforge.common.CommonHooks;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
-import net.minecraft.core.WritableRegistry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.RegistryOps;
-import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.server.ReloadableServerRegistries;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.world.level.storage.loot.LootDataType;
 import net.minecraft.world.level.storage.loot.LootTable;
-import net.minecraft.world.level.storage.loot.Validatable;
 
-import net.fabricmc.fabric.api.loot.v3.FabricLootTableBuilder;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
-import net.fabricmc.fabric.api.loot.v3.LootTableSource;
 import net.fabricmc.fabric.impl.loot.FabricLootTable;
 import net.fabricmc.fabric.impl.loot.LootUtil;
 
@@ -51,51 +44,18 @@ import net.fabricmc.fabric.impl.loot.LootUtil;
  */
 @Mixin(ReloadableServerRegistries.class)
 abstract class ReloadableServerRegistriesMixin {
-	@Inject(method = "lambda$scheduleRegistryLoad$0", at = @At(value = "INVOKE", target = "Ljava/util/Map;forEach(Ljava/util/function/BiConsumer;)V"))
-	private static <T extends Validatable> void modifyLootTable(LootDataType<T> lootDataType, RegistryOps<JsonElement> registryOps, ResourceManager resourceManager, CallbackInfoReturnable<WritableRegistry<?>> cir, @Local(name = "elements") Map<Identifier, T> elements) {
-		elements.replaceAll((identifier, t) -> modifyLootTable(t, identifier, registryOps));
-	}
+	// Neo: ReloadableServerRegistries#reload calls NeoForge's overload of RegistryDataLoader#load that also takes the pending tags.
+	@WrapOperation(method = "reload", at = @At(value = "INVOKE", target = "Lnet/minecraft/resources/RegistryDataLoader;load(Lnet/minecraft/server/packs/resources/ResourceManager;Ljava/util/List;Ljava/util/List;Ljava/util/concurrent/Executor;Ljava/util/List;)Ljava/util/concurrent/CompletableFuture;"))
+	private static CompletableFuture<RegistryAccess.Frozen> modifyLootTables(ResourceManager resourceManager, List<HolderLookup.RegistryLookup<?>> contextRegistries, List<RegistryDataLoader.RegistryData<?>> registriesToLoad, Executor executor, List<Registry.PendingTags<?>> pendingTags, Operation<CompletableFuture<RegistryAccess.Frozen>> original, @Local(name = "loadingContextWithTags") HolderLookup.Provider provider) {
+		LootUtil.startReload(resourceManager, provider);
 
-	@Unique
-	private static <T> T modifyLootTable(T value, Identifier id, RegistryOps<JsonElement> ops) {
-		if (!(value instanceof LootTable table)) return value;
-
-		ResourceKey<LootTable> key = ResourceKey.create(Registries.LOOT_TABLE, id);
-		// Extract original ops from ConditionalOps
-		HolderLookup.Provider provider = CommonHooks.extractLookupProvider(ops);
-		// Populated inside SimpleJsonResourceReloadListenerMixin
-		LootTableSource source = LootUtil.SOURCES.get().getOrDefault(id, LootTableSource.DATA_PACK);
-		// Invoke the REPLACE event for the current loot table.
-		LootTable replacement = LootTableEvents.REPLACE.invoker().replaceLootTable(key, table, source, provider);
-
-		if (replacement != null) {
-			// Set the loot table to MODIFY to be the replacement loot table.
-			// The MODIFY event will also see it as a replaced loot table via the source.
-			table = replacement;
-			source = LootTableSource.REPLACED;
-		}
-
-		// Turn the current table into a modifiable builder and invoke the MODIFY event.
-		LootTable.Builder builder = FabricLootTableBuilder.copyOf(table);
-		LootTableEvents.MODIFY.invoker().modifyLootTable(key, builder, source, provider);
-
-		T newTable = (T) builder.build();
-		Identifier lootTableId = table.getLootTableId();
-		if (lootTableId != null) {
-			((LootTable) newTable).setLootTableId(lootTableId);
-		}
-		return newTable;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Inject(method = "lambda$scheduleRegistryLoad$0", at = @At("RETURN"))
-	private static <T extends Validatable> void onLootTablesLoaded(LootDataType<T> lootDataType, RegistryOps<JsonElement> registryOps, ResourceManager resourceManager, CallbackInfoReturnable<WritableRegistry<?>> cir) {
-		if (lootDataType != LootDataType.TABLE) return;
-
-		Registry<LootTable> lootTableRegistry = (Registry<LootTable>) cir.getReturnValue();
-
-		LootTableEvents.ALL_LOADED.invoker().onLootTablesLoaded(resourceManager, lootTableRegistry);
-		LootUtil.SOURCES.remove();
-		lootTableRegistry.listElements().forEach(reference -> ((FabricLootTable) reference.value()).fabric$setHolder(reference));
+		return original.call(resourceManager, contextRegistries, registriesToLoad, executor, pendingTags)
+				.thenApply(registries -> {
+					Registry<LootTable> lootTableRegistry = registries.lookupOrThrow(Registries.LOOT_TABLE);
+					LootTableEvents.ALL_LOADED.invoker().onLootTablesLoaded(resourceManager, lootTableRegistry);
+					lootTableRegistry.listElements().forEach(reference -> ((FabricLootTable) reference.value()).fabric$setHolder(reference));
+					return registries;
+				})
+				.whenComplete((registries, throwable) -> LootUtil.endReload(resourceManager));
 	}
 }

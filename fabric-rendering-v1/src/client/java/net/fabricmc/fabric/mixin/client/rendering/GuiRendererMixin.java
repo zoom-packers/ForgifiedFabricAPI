@@ -17,42 +17,15 @@
 package net.fabricmc.fabric.mixin.client.rendering;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.blaze3d.IndexType;
-import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderPass;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 
 import net.minecraft.client.gui.render.GuiRenderer;
 
 @Mixin(GuiRenderer.class)
 abstract class GuiRendererMixin {
-	@WrapOperation(
-			method = "executeDraw",
-			at = @At(
-					value = "INVOKE",
-					target = "Lcom/mojang/blaze3d/systems/RenderPass;setIndexBuffer(Lcom/mojang/blaze3d/buffers/GpuBuffer;Lcom/mojang/blaze3d/IndexType;)V"
-			)
-	)
-	private void fixNonQuadIndexing(RenderPass instance, GpuBuffer buffer, IndexType indexType, Operation<Void> original, @Coerce GuiRendererDrawAccessor draw) {
-		RenderPipeline pipeline = draw.fabric$pipeline();
-
-		if (pipeline.usePipelineDrawModeForGui() && pipeline.getPrimitiveTopology() != PrimitiveTopology.QUADS) {
-			RenderSystem.AutoStorageIndexBuffer shapeIndexBuffer = RenderSystem.getSequentialBuffer(pipeline.getPrimitiveTopology());
-			buffer = shapeIndexBuffer.getBuffer(((StagedVertexBufferDrawAccessor) draw.fabric$Draw()).fabric$indexCount());
-			indexType = shapeIndexBuffer.type();
-		}
-
-		original.call(instance, buffer, indexType);
-	}
-
 	@ModifyExpressionValue(method = "addElementToMesh", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/render/GuiRenderer;scissorChanged(Lnet/minecraft/client/gui/navigation/ScreenRectangle;Lnet/minecraft/client/gui/navigation/ScreenRectangle;)Z"))
 	private boolean uploadPrimitivesIndividually(boolean original, @Local RenderPipeline pipeline) {
 		return original || pipeline.getPrimitiveTopology().connectedPrimitives;

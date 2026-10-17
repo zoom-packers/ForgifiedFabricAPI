@@ -25,8 +25,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.mojang.serialization.Codec;
-import net.neoforged.neoforge.registries.DataPackRegistriesHooks;
-import net.neoforged.neoforge.registries.DataPackRegistryEvent;
+import net.neoforged.neoforge.registries.NewDatapackRegistryEvent;
+import org.jetbrains.annotations.Unmodifiable;
 
 import net.minecraft.core.Registry;
 import net.minecraft.resources.RegistryDataLoader;
@@ -36,28 +36,48 @@ import net.minecraft.resources.ResourceKey;
 import net.fabricmc.fabric.api.event.registry.DynamicRegistries;
 
 public final class DynamicRegistriesImpl {
-	private static final List<RegistryDataLoader.RegistryData<?>> DYNAMIC_REGISTRIES = new ArrayList<>();
-	public static final Set<ResourceKey<?>> FABRIC_DYNAMIC_REGISTRY_KEYS = new HashSet<>();
-	public static final Set<ResourceKey<? extends Registry<?>>> DYNAMIC_REGISTRY_KEYS = new HashSet<>();
+	// Pending registrations, handed over to NeoForge in NewDatapackRegistryEvent.
+	// NeoForge then appends them to RegistryDataLoader.WORLD_REGISTRIES / RELOADABLE_REGISTRIES,
+	// which replaces Fabric's own redirect mixins (WorldLoader, RegistryPatchGenerator, etc.).
+	private static final List<RegistryDataLoader.RegistryData<?>> PENDING_WORLD_REGISTRIES = new ArrayList<>();
+	private static final List<RegistryDataLoader.RegistryData<?>> PENDING_RELOADABLE_REGISTRIES = new ArrayList<>();
+	public static final Set<ResourceKey<? extends Registry<?>>> FABRIC_DYNAMIC_REGISTRY_KEYS = new HashSet<>();
+	private static final Set<ResourceKey<? extends Registry<?>>> REGISTERED_KEYS = new HashSet<>();
 	public static final Map<ResourceKey<? extends Registry<?>>, Codec<?>> NETWORK_CODECS = new HashMap<>();
 
 	private DynamicRegistriesImpl() {
 	}
 
-	public static <T> RegistryDataLoader.RegistryData<T> register(ResourceKey<? extends Registry<T>> key, Codec<T> serverCodec) {
-		Objects.requireNonNull(key, "Registry key cannot be null");
-		Objects.requireNonNull(serverCodec, "Server codec cannot be null");
+	public static @Unmodifiable List<RegistryDataLoader.RegistryData<?>> getAllDynamicRegistries() {
+		List<RegistryDataLoader.RegistryData<?>> all = new ArrayList<>(RegistryDataLoader.WORLD_REGISTRIES);
+		all.addAll(RegistryDataLoader.DIMENSION_REGISTRIES);
+		all.addAll(RegistryDataLoader.RELOADABLE_REGISTRIES);
+		return List.copyOf(all);
+	}
 
-		if (DataPackRegistriesHooks.getDataPackRegistriesWithDimensions().anyMatch(d -> d.key().equals(key))
-				|| DYNAMIC_REGISTRY_KEYS.contains(key)
-		) {
+	public static @Unmodifiable List<RegistryDataLoader.RegistryData<?>> getWorldRegistries() {
+		return List.copyOf(RegistryDataLoader.WORLD_REGISTRIES);
+	}
+
+	public static @Unmodifiable List<RegistryDataLoader.RegistryData<?>> getReloadableRegistries() {
+		return List.copyOf(RegistryDataLoader.RELOADABLE_REGISTRIES);
+	}
+
+	private static void checkNotRegistered(ResourceKey<? extends Registry<?>> key) {
+		if (REGISTERED_KEYS.contains(key) || getAllDynamicRegistries().stream().anyMatch(d -> d.key().equals(key))) {
 			throw new IllegalArgumentException("Dynamic registry " + key + " has already been registered!");
 		}
+	}
+
+	public static <T> void register(ResourceKey<? extends Registry<T>> key, Codec<T> serverCodec) {
+		Objects.requireNonNull(key, "Registry key cannot be null");
+		Objects.requireNonNull(serverCodec, "Server codec cannot be null");
+		checkNotRegistered(key);
 
 		var entry = new RegistryDataLoader.RegistryData<>(key, serverCodec, RegistryValidator.none());
-		DYNAMIC_REGISTRIES.add(entry);
+		PENDING_WORLD_REGISTRIES.add(entry);
+		REGISTERED_KEYS.add(key);
 		FABRIC_DYNAMIC_REGISTRY_KEYS.add(key);
-		return entry;
 	}
 
 	public static <T> void addSyncedRegistry(ResourceKey<? extends Registry<T>> key, Codec<T> networkCodec, DynamicRegistries.SyncOption... options) {
@@ -69,12 +89,29 @@ public final class DynamicRegistriesImpl {
 		FABRIC_DYNAMIC_REGISTRY_KEYS.add(key);
 	}
 
+	public static <T> void registerReloadable(ResourceKey<? extends Registry<T>> key, Codec<T> serverCodec) {
+		Objects.requireNonNull(key, "Registry key cannot be null");
+		Objects.requireNonNull(serverCodec, "Server codec cannot be null");
+		checkNotRegistered(key);
+
+		var entry = new RegistryDataLoader.RegistryData<>(key, serverCodec, RegistryValidator.none());
+		PENDING_RELOADABLE_REGISTRIES.add(entry);
+		REGISTERED_KEYS.add(key);
+		FABRIC_DYNAMIC_REGISTRY_KEYS.add(key);
+	}
+
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	static void onNewDatapackRegistries(DataPackRegistryEvent.NewRegistry event) {
-		for (RegistryDataLoader.RegistryData dynamicRegistry : DYNAMIC_REGISTRIES) {
+	static void onNewDatapackRegistries(NewDatapackRegistryEvent event) {
+		for (RegistryDataLoader.RegistryData dynamicRegistry : PENDING_WORLD_REGISTRIES) {
 			Codec networkCodec = NETWORK_CODECS.get(dynamicRegistry.key());
-			event.dataPackRegistry(dynamicRegistry.key(), dynamicRegistry.elementCodec(), networkCodec);
+			event.worldRegistry((ResourceKey) dynamicRegistry.key(), dynamicRegistry.elementCodec(), networkCodec);
 		}
-		DYNAMIC_REGISTRIES.clear();
+
+		for (RegistryDataLoader.RegistryData dynamicRegistry : PENDING_RELOADABLE_REGISTRIES) {
+			event.reloadableRegistry((ResourceKey) dynamicRegistry.key(), dynamicRegistry.elementCodec());
+		}
+
+		PENDING_WORLD_REGISTRIES.clear();
+		PENDING_RELOADABLE_REGISTRIES.clear();
 	}
 }

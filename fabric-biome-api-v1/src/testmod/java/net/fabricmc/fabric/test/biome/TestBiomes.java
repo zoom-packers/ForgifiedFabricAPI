@@ -25,6 +25,7 @@ import net.minecraft.data.worldgen.biome.OverworldBiomes;
 import net.minecraft.data.worldgen.placement.EndPlacements;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.attribute.AmbientSounds;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.biome.Biome;
@@ -32,7 +33,7 @@ import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.levelgen.GenerationStep;
-import net.minecraft.world.level.levelgen.carver.ConfiguredWorldCarver;
+import net.minecraft.world.level.levelgen.carver.WorldCarver;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 
 public final class TestBiomes {
@@ -48,11 +49,11 @@ public final class TestBiomes {
 
 	public static void bootstrap(BootstrapContext<Biome> context) {
 		HolderGetter<PlacedFeature> placedFeatures = context.lookup(Registries.PLACED_FEATURE);
-		HolderGetter<ConfiguredWorldCarver<?>> configuredCarvers = context.lookup(Registries.CONFIGURED_CARVER);
+		HolderGetter<WorldCarver> carvers = context.lookup(Registries.CARVER);
 
 		context.register(EXAMPLE_BIOME, createExample());
-		context.register(TEST_CRIMSON_FOREST, NetherBiomes.crimsonForest(placedFeatures, configuredCarvers));
-		context.register(CUSTOM_PLAINS, OverworldBiomes.plains(placedFeatures, configuredCarvers, false, false, false));
+		context.register(TEST_CRIMSON_FOREST, NetherBiomes.crimsonForest(placedFeatures, carvers));
+		context.register(CUSTOM_PLAINS, OverworldBiomes.plains(placedFeatures, carvers, false, false, false));
 		context.register(TEST_END_HIGHLANDS, createEndHighlands(placedFeatures));
 		context.register(TEST_END_MIDLANDS, createEndMidlands());
 		context.register(TEST_END_BARRRENS, createEndBarrens());
@@ -63,9 +64,9 @@ public final class TestBiomes {
 				.temperature(0.8f)
 				.downfall(0.4f)
 				.hasPrecipitation(false)
-				.setAttribute(EnvironmentAttributes.SKY_COLOR, 7907327)
-				.setAttribute(EnvironmentAttributes.FOG_COLOR, 12638463)
-				.setAttribute(EnvironmentAttributes.WATER_FOG_COLOR, 329011)
+				.setAttribute(EnvironmentAttributes.SKY_COLOR, ARGB.vector3fFromRGB24(7907327))
+				.setAttribute(EnvironmentAttributes.FOG_COLOR, ARGB.vector3fFromRGB24(12638463))
+				.setAttribute(EnvironmentAttributes.WATER_FOG_COLOR, ARGB.vector3fFromRGB24(329011))
 				.specialEffects(
 					new BiomeSpecialEffects.Builder()
 						.waterColor(4159204)
@@ -103,9 +104,9 @@ public final class TestBiomes {
 				.hasPrecipitation(false)
 				.temperature(0.5F)
 				.downfall(0.5F)
-				.setAttribute(EnvironmentAttributes.WATER_FOG_COLOR, 329011)
-				.setAttribute(EnvironmentAttributes.FOG_COLOR, 10518688)
-				.setAttribute(EnvironmentAttributes.SKY_COLOR, 0)
+				.setAttribute(EnvironmentAttributes.WATER_FOG_COLOR, ARGB.vector3fFromRGB24(329011))
+				.setAttribute(EnvironmentAttributes.FOG_COLOR, ARGB.vector3fFromRGB24(10518688))
+				.setAttribute(EnvironmentAttributes.SKY_COLOR, ARGB.vector3fFromRGB24(0))
 				.setAttribute(EnvironmentAttributes.AMBIENT_SOUNDS, AmbientSounds.LEGACY_CAVE_SETTINGS)
 				.specialEffects(
 					new BiomeSpecialEffects.Builder()

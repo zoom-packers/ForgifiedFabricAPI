@@ -16,7 +16,9 @@
 
 package net.fabricmc.fabric.impl.registry.sync;
 
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.Registry;
@@ -35,6 +37,8 @@ public final class RegistryAttributeImpl implements RegistryAttributeHolder {
 	}
 
 	private final ResourceKey<?> key;
+	// Attributes that are only tracked by FFAPI (SYNCED is delegated to NeoForge, MODDED is always reported).
+	private final Set<RegistryAttribute> attributes = EnumSet.noneOf(RegistryAttribute.class);
 
 	private RegistryAttributeImpl(ResourceKey<?> key) {
 		this.key = key;
@@ -45,7 +49,12 @@ public final class RegistryAttributeImpl implements RegistryAttributeHolder {
 		if (attribute == RegistryAttribute.SYNCED) {
 			Registry<?> registry = BuiltInRegistries.REGISTRY.getValue((ResourceKey) this.key);
 			((BaseMappedRegistryAccessor) registry).invokeSetSync(true);
+		} else {
+			synchronized (this.attributes) {
+				this.attributes.add(attribute);
+			}
 		}
+
 		return this;
 	}
 
@@ -54,6 +63,12 @@ public final class RegistryAttributeImpl implements RegistryAttributeHolder {
 		if (attribute == RegistryAttribute.SYNCED) {
 			return BuiltInRegistries.REGISTRY.getValue((ResourceKey) this.key).doesSync();
 		}
-		return attribute == RegistryAttribute.MODDED;
+		if (attribute == RegistryAttribute.MODDED) {
+			return true;
+		}
+
+		synchronized (this.attributes) {
+			return this.attributes.contains(attribute);
+		}
 	}
 }

@@ -60,11 +60,12 @@ public final class HudStatusBarHeightRegistry {
 	 * actual element must also be taken into account here; so when an element currently does not actually render
 	 * {@code 0} must be returned.
 	 *
-	 * <p>Vanilla height providers for this side are: {@link HudStatusBarHeightRegistryImpl#HEALTH_BAR},
-	 * {@link HudStatusBarHeightRegistryImpl#ARMOR_BAR}
+	 * <p>Vanilla height providers for this side are: {@link HudStatusBarHeightRegistryImpl#INFO_BAR},
+	 * {@link HudStatusBarHeightRegistryImpl#HEALTH_BAR}, {@link HudStatusBarHeightRegistryImpl#ARMOR_BAR}
 	 *
 	 * <p>Existing height providers (like vanilla) can be replaced to coincide with
 	 * {@link HudElementRegistry#replaceElement(Identifier, Function)}.
+	 * (Method {@link #replaceLeft(Identifier, Function)} might be more suitable for this use case.)
 	 *
 	 * <p>Registration is frozen once the client has fully started.
 	 *
@@ -88,11 +89,13 @@ public final class HudStatusBarHeightRegistry {
 	 * actual element must also be taken into account here; so when an element currently does not actually render
 	 * {@code 0} must be returned.
 	 *
-	 * <p>Vanilla height providers for this side are: {@link HudStatusBarHeightRegistryImpl#MOUNT_HEALTH},
-	 * {@link HudStatusBarHeightRegistryImpl#FOOD_BAR}, {@link HudStatusBarHeightRegistryImpl#AIR_BAR}
+	 * <p>Vanilla height providers for this side are: {@link HudStatusBarHeightRegistryImpl#INFO_BAR},
+	 * {@link HudStatusBarHeightRegistryImpl#MOUNT_HEALTH}, {@link HudStatusBarHeightRegistryImpl#FOOD_BAR},
+	 * {@link HudStatusBarHeightRegistryImpl#AIR_BAR}
 	 *
 	 * <p>Existing height providers (like vanilla) can be replaced to coincide with
 	 * {@link HudElementRegistry#replaceElement(Identifier, Function)}.
+	 * (Method {@link #replaceRight(Identifier, Function)} might be more suitable for this use case.)
 	 *
 	 * <p>Registration is frozen once the client has fully started.
 	 *
@@ -107,26 +110,77 @@ public final class HudStatusBarHeightRegistry {
 		HudStatusBarHeightRegistryImpl.addRight(id, heightProvider);
 	}
 
-	/**
-	 * Gets the total calculated height offset for a given HUD element ID. Usage:
-	 * {@snippet :
-	 * - net.minecraft.client.gui.GuiGraphics.guiHeight() - (39 + renderHeight)
-	 * + net.minecraft.client.gui.GuiGraphics.guiHeight() - HudStatusBarHeightRegistry.getHeight(id)
-	 * }
-	 *
-	 * <p>This method is typically used by the rendering system to determine how much
-	 * to shift a HUD element. It returns the default HUD height which is {@code 39} plus the sum of all registered
-	 * provider heights that are considered "below" the position of the element associated with the given {@code id}.
-	 *
-	 * <p>Note: The registry must be initialized (frozen) before this method returns
-	 * values without throwing an exception. This initialization happens during the Minecraft client setup.
-	 *
-	 * @param id the {@link Identifier} of the HUD element.
-	 * @return the total height offset.
-	 */
+	/// Replaces the height provider for a status bar on the left side above the hotbar.
+	///
+	/// This can be used to delegate to the original height provider when needed,
+	/// convenient for conditionally hiding or conditionally resizing a bar.
+	/// This can be used on vanilla bars as well.
+	///
+	/// Registration is frozen once the client has fully started.
+	///
+	/// @param id       the [Identifier]; must have a corresponding [StatusBarHeightProvider]
+	///                 registered by vanilla or any mod.
+	/// @param replacer the replacer function that takes a [StatusBarHeightProvider]
+	///                 and returns a new [StatusBarHeightProvider].
+	///
+	/// @see #addLeft(Identifier, StatusBarHeightProvider)
+	public static void replaceLeft(Identifier id, Function<StatusBarHeightProvider, StatusBarHeightProvider> replacer) {
+		Objects.requireNonNull(id, "id is null");
+		Objects.requireNonNull(replacer, "replacer is null");
+		HudStatusBarHeightRegistryImpl.replaceLeft(id, replacer);
+	}
+
+	/// Replaces the height provider for a status bar on the right side above the hotbar.
+	///
+	/// This can be used to delegate to the original height provider when needed,
+	/// convenient for conditionally hiding or conditionally resizing a bar.
+	/// This can be used on vanilla bars as well.
+	///
+	/// Registration is frozen once the client has fully started.
+	///
+	/// @param id       the [Identifier]; must have a corresponding [StatusBarHeightProvider]
+	///                 registered by vanilla or any mod.
+	/// @param replacer the replacer function that takes a [StatusBarHeightProvider]
+	///                 and returns a new [StatusBarHeightProvider].
+	///
+	/// @see #addRight(Identifier, StatusBarHeightProvider)
+	public static void replaceRight(Identifier id, Function<StatusBarHeightProvider, StatusBarHeightProvider> replacer) {
+		Objects.requireNonNull(id, "id is null");
+		Objects.requireNonNull(replacer, "replacer is null");
+		HudStatusBarHeightRegistryImpl.replaceRight(id, replacer);
+	}
+
+	/// Gets the total calculated Y offset for a given HUD element ID
+	/// from the bottom of the screen to the top of the element.
+	///
+	/// Usage:
+	/// ```diff
+	/// - net.minecraft.client.gui.GuiGraphics.guiHeight() - (39 + renderHeight)
+	/// + net.minecraft.client.gui.GuiGraphics.guiHeight() - HudStatusBarHeightRegistry.getHeight(id)
+	/// ```
+	///
+	/// This method is typically used by the rendering system to determine how much to shift a HUD element.
+	/// It returns the default HUD height which is `24` plus the sum of all registered provider heights
+	/// including and below the position of the element associated with the given `id`.
+	/// Earlier hud elements are considered to be below later ones.
+	///
+	/// Note: The registry must be initialized (frozen) before this method returns
+	/// values without throwing an exception. This initialization happens during the Minecraft client setup.
+	///
+	/// @param id the [Identifier] of the HUD element.
+	/// @return the total Y offset from the bottom of the screen to the top of the element.
 	public static int getHeight(Identifier id) {
 		Objects.requireNonNull(id, "id is null");
 		return HudStatusBarHeightRegistryImpl.getHeight(id);
+	}
+
+	/// Gets the height of the given HUD element ID.
+	///
+	/// @param id the [Identifier] of the HUD element.
+	/// @return the height of the element.
+	public static int getElementHeight(Identifier id) {
+		Objects.requireNonNull(id, "id is null");
+		return HudStatusBarHeightRegistryImpl.getElementHeight(id);
 	}
 
 	private HudStatusBarHeightRegistry() {

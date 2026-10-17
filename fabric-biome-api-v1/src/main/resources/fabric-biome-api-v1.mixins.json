@@ -6,7 +6,6 @@
     "BiomeSourceMixin",
     "ClimateSamplerMixin",
     "NetherBiomePresetMixin",
-    "NoiseChunkMixin",
     "RandomStateMixin",
     "TheEndBiomeSourceMixin"
   ],

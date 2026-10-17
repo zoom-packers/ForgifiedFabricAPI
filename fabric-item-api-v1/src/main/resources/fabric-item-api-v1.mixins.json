@@ -5,6 +5,7 @@
   "mixins": [
     "AbstractContainerMenuMixin",
     "AnvilMenuMixin",
+    "BlockTransformerMixin",
     "BuiltInRegistriesMixin",
     "DataComponentInitializersMixin",
     "DataComponentInitializersPendingComponentsMixin",

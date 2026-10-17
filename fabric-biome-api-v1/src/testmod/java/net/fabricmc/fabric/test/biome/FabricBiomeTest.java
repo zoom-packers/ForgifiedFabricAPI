@@ -25,6 +25,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
@@ -86,7 +87,7 @@ public class FabricBiomeTest implements ModInitializer {
 						})
 				.add(ModificationPhase.ADDITIONS,
 						BiomeSelectors.tag(TagKey.create(Registries.BIOME, Identifier.fromNamespaceAndPath(MOD_ID, "tag_selector_test"))),
-						context -> context.getAttributes().set(EnvironmentAttributes.SKY_COLOR, 0x770000))
+						context -> context.getAttributes().set(EnvironmentAttributes.SKY_COLOR, ARGB.vector3fFromRGB24(0x770000)))
 				.add(ModificationPhase.ADDITIONS, BiomeSelectors.foundInOverworld(), context ->
 						context.getGenerationSettings().addFeature(GenerationStep.Decoration.UNDERGROUND_ORES, PLACED_COMMON_ORE)
 				);

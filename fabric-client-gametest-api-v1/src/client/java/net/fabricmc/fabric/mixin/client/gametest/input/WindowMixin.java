@@ -26,7 +26,9 @@ import com.mojang.blaze3d.platform.MonitorManager;
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.platform.WindowEventHandler;
-import com.mojang.blaze3d.systems.GpuBackend;
+import com.mojang.renderpearl.api.device.GpuBackend;
+import org.lwjgl.sdl.SDLEvents;
+import org.lwjgl.sdl.SDL_Event;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -88,8 +90,8 @@ public abstract class WindowMixin implements WindowHooks {
 	@Unique
 	private int realFramebufferHeight;
 
-	@Inject(method = "<init>", at = @At("RETURN"))
-	private void onInit(WindowEventHandler eventHandler, DisplayData displayData, String fullscreenVideoModeString, boolean exclusiveFullscreen, String title, MonitorManager monitorManager, GpuBackend backend, CallbackInfo ci) {
+	@Inject(method = "<init>(Lcom/mojang/blaze3d/platform/WindowEventHandler;Lcom/mojang/blaze3d/platform/DisplayData;Ljava/lang/String;ZLjava/lang/String;Lcom/mojang/blaze3d/platform/MonitorManager;Lcom/mojang/renderpearl/api/device/GpuBackend;I)V", at = @At("RETURN"))
+	private void onInit(WindowEventHandler eventHandler, DisplayData displayData, String fullscreenVideoModeString, boolean exclusiveFullscreen, String title, MonitorManager monitorManager, GpuBackend backend, int maximumSize, CallbackInfo ci) {
 		this.defaultWidth = displayData.width();
 		this.defaultHeight = displayData.height();
 		this.realWidth = this.width;
@@ -101,20 +103,28 @@ public abstract class WindowMixin implements WindowHooks {
 		this.height = this.windowedHeight = this.framebufferHeight = defaultHeight;
 	}
 
-	@Inject(method = {"onFocus", "onEnter", "onIconify"}, at = @At("HEAD"), cancellable = true)
+	@Inject(method = {"onFocus", "onIconified"}, at = @At("HEAD"), cancellable = true)
 	private void cancelEvents(CallbackInfo ci) {
 		ci.cancel();
 	}
 
+	@Inject(method = "handleEvent", at = @At("HEAD"), cancellable = true)
+	private void cancelDirectEvents(SDL_Event event, CallbackInfo ci) {
+		if (event.type() == SDLEvents.SDL_EVENT_WINDOW_MOUSE_ENTER
+				|| event.type() == SDLEvents.SDL_EVENT_WINDOW_MOUSE_LEAVE) {
+			ci.cancel();
+		}
+	}
+
 	@Inject(method = "onResize", at = @At("HEAD"), cancellable = true)
-	private void cancelResize(long window, int width, int height, CallbackInfo ci) {
+	private void cancelResize(int width, int height, CallbackInfo ci) {
 		realWidth = width;
 		realHeight = height;
 		ci.cancel();
 	}
 
 	@Inject(method = "onFramebufferResize", at = @At("HEAD"), cancellable = true)
-	private void cancelFramebufferResize(long window, int width, int height, CallbackInfo ci) {
+	private void cancelFramebufferResize(int width, int height, CallbackInfo ci) {
 		realFramebufferWidth = width;
 		realFramebufferHeight = height;
 		ci.cancel();
@@ -126,16 +136,22 @@ public abstract class WindowMixin implements WindowHooks {
 		int prevHeight = this.height;
 		int prevWindowedWidth = this.windowedWidth;
 		int prevWindowedHeight = this.windowedHeight;
+		int prevFramebufferWidth = this.framebufferWidth;
+		int prevFramebufferHeight = this.framebufferHeight;
 
 		original.call();
 
 		this.realWidth = this.width;
 		this.realHeight = this.height;
+		this.realFramebufferWidth = this.framebufferWidth;
+		this.realFramebufferHeight = this.framebufferHeight;
 
 		this.width = prevWidth;
 		this.height = prevHeight;
 		this.windowedWidth = prevWindowedWidth;
 		this.windowedHeight = prevWindowedHeight;
+		this.framebufferWidth = prevFramebufferWidth;
+		this.framebufferHeight = prevFramebufferHeight;
 	}
 
 	@Inject(method = "setWindowed", at = @At("HEAD"), cancellable = true)
@@ -181,7 +197,7 @@ public abstract class WindowMixin implements WindowHooks {
 		Monitor monitor = this.monitorManager.findBestMonitor((Window) (Object) this);
 
 		if (monitor != null) {
-			VideoMode videoMode = monitor.getPreferredVidMode(this.preferredFullscreenVideoMode);
+			VideoMode videoMode = monitor.getPreferredVideoMode(this.preferredFullscreenVideoMode);
 
 			this.x += (this.windowedWidth - width) / 2;
 			this.y += (this.windowedHeight - height) / 2;

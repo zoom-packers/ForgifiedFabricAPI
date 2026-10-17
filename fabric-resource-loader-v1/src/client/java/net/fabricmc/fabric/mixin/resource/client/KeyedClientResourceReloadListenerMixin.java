@@ -26,7 +26,6 @@ import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.particle.ParticleResources;
 import net.minecraft.client.renderer.CloudRenderer;
 import net.minecraft.client.renderer.GpuWarnlistManager;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.ShaderManager;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -41,6 +40,7 @@ import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.client.resources.model.EquipmentAssetManager;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.client.resources.model.sprite.AtlasManager;
+import net.minecraft.client.resources.palette.PalettedTextureManager;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.resources.Identifier;
 
@@ -60,6 +60,7 @@ import net.fabricmc.fabric.impl.resource.FabricResourceReloader;
 		FontManager.class,
 		GrassColorReloadListener.class,
 		LanguageManager.class,
+		PalettedTextureManager.class,
 		ParticleResources.class,
 		ShaderManager.class,
 		SplashManager.class,
@@ -67,7 +68,7 @@ import net.fabricmc.fabric.impl.resource.FabricResourceReloader;
 		TextureManager.class,
 		WaypointStyleManager.class,
 		/* private */
-		LevelRenderer.class, LevelExtractor.class, GpuWarnlistManager.class, PeriodicNotificationManager.class
+		LevelExtractor.class, GpuWarnlistManager.class, PeriodicNotificationManager.class
 })
 public abstract class KeyedClientResourceReloadListenerMixin implements FabricResourceReloader {
 	@Unique
