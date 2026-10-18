@@ -20,9 +20,8 @@ dependencies {
 sourceSets {
 	testmod {
 		resources {
-			srcDirs += [
-				'src/testmod/generated'
-			]
+			// srcDir (not srcDirs +=) keeps the builtBy dependency on generateTestmodModMetadata
+			srcDir 'src/testmod/generated'
 		}
 	}
 }

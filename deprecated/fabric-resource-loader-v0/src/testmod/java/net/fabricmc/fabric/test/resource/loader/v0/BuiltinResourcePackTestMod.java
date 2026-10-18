@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.fabric.test.resource.loader;
+package net.fabricmc.fabric.test.resource.loader.v0;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

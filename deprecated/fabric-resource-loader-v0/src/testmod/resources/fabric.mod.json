@@ -10,8 +10,8 @@
   },
   "entrypoints": {
     "main": [
-      "net.fabricmc.fabric.test.resource.loader.BuiltinResourcePackTestMod",
-      "net.fabricmc.fabric.test.resource.loader.ResourceReloadListenerTestMod"
+      "net.fabricmc.fabric.test.resource.loader.v0.BuiltinResourcePackTestMod",
+      "net.fabricmc.fabric.test.resource.loader.v0.ResourceReloadListenerTestMod"
     ]
   }
 }

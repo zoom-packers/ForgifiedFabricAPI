@@ -54,6 +54,24 @@ version = "$upstreamVersion+$versionMc+$implementationVersion${(if (System.geten
 println("Version: $version")
 
 val injectedInterfaces = configurations.create("injectedInterfaces")
+
+// 26.3: the root project no longer applies the modules' interface injection data to its own (non-recompiled)
+// Minecraft jar. NeoForge's binary injector (installertools 4.0.12) writes generic arguments into the
+// interface class name ("FabricEntityType$Builder<T>"), which breaks the root gametest/client runs. At runtime
+// the interfaces come from FFAPI's mixins anyway, like in production. The data is still merged and published.
+val moduleInterfaceInjectionData: Configuration = configurations.create("moduleInterfaceInjectionData") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+afterEvaluate {
+    val source = configurations.getByName("interfaceInjectionData").attributes
+    moduleInterfaceInjectionData.attributes {
+        source.keySet().forEach { key ->
+            @Suppress("UNCHECKED_CAST")
+            attribute(key as Attribute<Any>, source.getAttribute(key)!!)
+        }
+    }
+}
 val ENABLE_RECOMP_FOR = listOf(
     "fabric-data-attachment-api-v1",
     "fabric-object-builder-api-v1",
@@ -207,13 +225,13 @@ allprojects {
             }
         }
 
-        rootProject.dependencies.add("interfaceInjectionData", project(project.path))
+        rootProject.dependencies.add(moduleInterfaceInjectionData.name, project(project.path))
         rootProject.dependencies.add("accessTransformers", project(project.path))
     }
 }
 
 val mergeInterfaces = tasks.register("mergeInterfaces", MergeInterfaceInjectionTask::class) {
-    inputFiles.from(configurations.interfaceInjectionData)
+    inputFiles.from(moduleInterfaceInjectionData)
     outputFile = file("build/$name/merged.json")
 }
 

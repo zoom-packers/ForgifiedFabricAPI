@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.fabric.test.resource.loader;
+package net.fabricmc.fabric.test.resource.loader.v0;
 
 import java.util.Collection;
 import java.util.Collections;

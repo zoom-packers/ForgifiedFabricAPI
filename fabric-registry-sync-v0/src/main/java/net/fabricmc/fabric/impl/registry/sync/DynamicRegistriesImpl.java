@@ -25,10 +25,12 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.mojang.serialization.Codec;
+import net.neoforged.neoforge.registries.DataPackRegistriesHooks;
 import net.neoforged.neoforge.registries.NewDatapackRegistryEvent;
 import org.jetbrains.annotations.Unmodifiable;
 
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.RegistryValidator;
 import net.minecraft.resources.ResourceKey;
@@ -44,6 +46,13 @@ public final class DynamicRegistriesImpl {
 	public static final Set<ResourceKey<? extends Registry<?>>> FABRIC_DYNAMIC_REGISTRY_KEYS = new HashSet<>();
 	private static final Set<ResourceKey<? extends Registry<?>>> REGISTERED_KEYS = new HashSet<>();
 	public static final Map<ResourceKey<? extends Registry<?>>, Codec<?>> NETWORK_CODECS = new HashMap<>();
+
+	static {
+		// NeoForge 26.3: DataPackRegistriesHooks must be initialized before RegistryDataLoader. Its static init
+		// reads RegistryDataLoader.WORLD_REGISTRIES, which is still null if RegistryDataLoader's own <clinit>
+		// is what triggered it (WORLD_REGISTRIES = DataPackRegistriesHooks.captureWorldRegistries(...)).
+		DataPackRegistriesHooks.isWorldRegistry(Registries.BIOME);
+	}
 
 	private DynamicRegistriesImpl() {
 	}
