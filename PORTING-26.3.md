@@ -109,14 +109,22 @@ entity doesn't have (null instance), like upstream fabric-api#5121.
   (e.g. calling `System.exit(0)` after datagen, or switching the run to NeoForge's data run type) is
   still open. A server-only run deletes the client assets in `src/testmod/generated`; run
   `runDatagenClient` too, or restore them with git, before committing regenerated files.
-- Client game tests (`runGametestClient`) and the client in general are **not run** (they open a window).
+- Client: a NeoForge 26.3 client dev run (Connector + Launchpad + FFAPI + AppleSkin + Krypton + The Sift +
+  NeoForge GeckoLib) loads and quick-plays into a world. The first launch crashed on
+  `ClientPacketListenerMixin.invokeTagsLoaded`: upstream re-targeted it to `CreativeModeTabs.searchTab()`,
+  which NeoForge's `handleUpdateTags` doesn't call, so it now targets `allTabs()`. Client game tests
+  (`runGametestClient`) were not run.
 
 ## Known gaps / still broken
 
 - Server-side mod translations (see above, pre-existing).
 - Builtin pack sorting test (pre-existing).
-- Client side unverified: rendering (Indigo/FRAPI on renderpearl), HUD, model loading, keybinds,
-  creative tabs, client game tests.
+- Client only smoke-tested (title -> world). Not verified: rendering details (Indigo/FRAPI on
+  renderpearl), HUD, keybinds, creative tabs, client game tests.
+- `Missing FluidModel for fluid 'the_sift:ichor'` (NeoForge `ClientHooks.gatherFluidModels`): fluids
+  registered through Fabric's `FluidRenderHandlerRegistry` may not reach NeoForge 26.3's new
+  `RegisterFluidModelsEvent` / `FluidModel` map (FFAPI uses `FluidStateModelSetMixin`). Check Ichor
+  in-game; it probably needs a bridge to `RegisterFluidModelsEvent`.
 - `runDatagen` exits non-zero after generating (see above).
 - Biome spawn emulation: a full override of `NATURAL_MOB_SPAWNS` can't remove inherited spawn costs
   (NeoForge applies spawns as an overlay).

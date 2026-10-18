@@ -102,7 +102,8 @@ abstract class ClientPacketListenerMixin {
 		}
 	}
 
-	@Inject(method = "handleUpdateTags", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/CreativeModeTabs;searchTab()Lnet/minecraft/world/item/CreativeModeTab;"))
+	// Neo: handleUpdateTags rebuilds the search trees of all tabs with a search bar instead of calling searchTab()
+	@Inject(method = "handleUpdateTags", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/CreativeModeTabs;allTabs()Ljava/util/List;"))
 	private void invokeTagsLoaded(ClientboundUpdateTagsPacket packet, CallbackInfo ci) {
 		CommonLifecycleEvents.TAGS_LOADED.invoker().onTagsLoaded(registryAccess, true);
 	}
