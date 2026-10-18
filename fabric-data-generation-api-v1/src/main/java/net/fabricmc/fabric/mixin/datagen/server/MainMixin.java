@@ -34,6 +34,9 @@ public class MainMixin {
 		if (FabricDataGenHelper.ENABLED) {
 			Bootstrap.bootStrap();
 			FabricDataGenHelper.run();
+			// Neo: FML 12's server launcher waits for the "Server thread" after Main returns and fails without it.
+			// Data generation never starts a server, so exit successfully here (failures already exit with -1).
+			System.exit(0);
 			info.cancel();
 		}
 	}

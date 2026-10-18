@@ -88,6 +88,11 @@ Datagen on NeoForge 26.3:
 - `fabric-data-generation-api-v1` uses recompilation (`ENABLE_RECOMP_FOR`), because binary interface
   injection breaks the generic `FabricTagAppender<T>` at runtime.
 
+Fluid rendering: Fabric fluid models (`FluidRenderingRegistry`) are added to the map NeoForge passes to
+`RegisterFluidModelsEvent` (`ClientHooks.gatherFluidModels`) instead of after it. Before, NeoForge logged
+"Missing FluidModel" for every Fabric fluid (e.g. `the_sift:ichor`), although FFAPI then added the model.
+Fabric registrations can still override water/lava.
+
 Bug fixed along the way: the mob-effect removal bridge called `ALLOW_EARLY_REMOVE` for effects the
 entity doesn't have (null instance), like upstream fabric-api#5121.
 
@@ -103,12 +108,11 @@ entity doesn't have (null instance), like upstream fabric-api#5121.
     temporarily replace its body with `if (false) testTranslationLoaded();` (not committed).
   - With the same workarounds, 26.2.x runs 112 tests with 2 failures (the one above, plus the effect
     NPE fixed here). 26.3 has 2 fewer tests because upstream removed the deleted registries' tests.
-- `:fabric-data-generation-api-v1:runDatagen`: all providers run and write their output
-  (54 files). Afterwards FML 12's `Server.main` throws "Couldn't find Minecraft server thread", because
-  FFAPI's datagen path returns without starting a server, so the Gradle task exits non-zero. Fixing that
-  (e.g. calling `System.exit(0)` after datagen, or switching the run to NeoForge's data run type) is
-  still open. A server-only run deletes the client assets in `src/testmod/generated`; run
-  `runDatagenClient` too, or restore them with git, before committing regenerated files.
+- `:fabric-data-generation-api-v1:runDatagen`: passes. All providers run and write their output
+  (54 files). FML 12's `Server.main` waits for a "Server thread" after `Main` returns, so the datagen path
+  now calls `System.exit(0)` after successful generation (failures already exit with -1). A server-only
+  run deletes the client assets in `src/testmod/generated`; run `runDatagenClient` too, or restore them
+  with git, before committing regenerated files.
 - Client: a NeoForge 26.3 client dev run (Connector + Launchpad + FFAPI + AppleSkin + Krypton + The Sift +
   NeoForge GeckoLib) loads and quick-plays into a world. The first launch crashed on
   `ClientPacketListenerMixin.invokeTagsLoaded`: upstream re-targeted it to `CreativeModeTabs.searchTab()`,
@@ -121,11 +125,9 @@ entity doesn't have (null instance), like upstream fabric-api#5121.
 - Builtin pack sorting test (pre-existing).
 - Client only smoke-tested (title -> world). Not verified: rendering details (Indigo/FRAPI on
   renderpearl), HUD, keybinds, creative tabs, client game tests.
-- `Missing FluidModel for fluid 'the_sift:ichor'` (NeoForge `ClientHooks.gatherFluidModels`): fluids
-  registered through Fabric's `FluidRenderHandlerRegistry` may not reach NeoForge 26.3's new
-  `RegisterFluidModelsEvent` / `FluidModel` map (FFAPI uses `FluidStateModelSetMixin`). Check Ichor
-  in-game; it probably needs a bridge to `RegisterFluidModelsEvent`.
-- `runDatagen` exits non-zero after generating (see above).
+- Intermittent: about 1 in 3 root game-test runs once died during mod loading with an NPE in
+  `NeoForgeRegistryCallbacks$BlockCallbacks.onBake` (iterating the block registry during freeze, parallel
+  mod loading). Not reproduced in the two reruns. Watch for it.
 - Biome spawn emulation: a full override of `NATURAL_MOB_SPAWNS` can't remove inherited spawn costs
   (NeoForge applies spawns as an overlay).
 - Fabric's new registry "missing content" world validation is untested at runtime.

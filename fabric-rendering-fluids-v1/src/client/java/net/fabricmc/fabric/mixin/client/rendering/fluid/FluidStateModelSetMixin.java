@@ -16,13 +16,13 @@
 
 package net.fabricmc.fabric.mixin.client.rendering.fluid;
 
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
 
 import net.minecraft.client.renderer.block.FluidModel;
 import net.minecraft.client.renderer.block.FluidStateModelSet;
@@ -33,9 +33,11 @@ import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderingRegistryImp
 
 @Mixin(FluidStateModelSet.class)
 public abstract class FluidStateModelSetMixin {
-	@WrapMethod(method = "bake")
-	private static Map<Fluid, FluidModel> bake(MaterialBaker materials, Operation<Map<Fluid, FluidModel>> original) {
-		Map<Fluid, FluidModel> models = new IdentityHashMap<>(original.call(materials));
+	// Neo: add Fabric's fluid models before NeoForge gathers models from RegisterFluidModelsEvent, so that
+	// NeoForge's missing-model check sees them and Fabric registrations can still override water/lava.
+	@WrapOperation(method = "bake", at = @At(value = "INVOKE", target = "Lnet/neoforged/neoforge/client/ClientHooks;gatherFluidModels(Ljava/util/Map;Lnet/minecraft/client/resources/model/sprite/MaterialBaker;)Ljava/util/Map;"))
+	private static Map<Fluid, FluidModel> addFabricModels(Map<Fluid, FluidModel> vanillaModels, MaterialBaker materials, Operation<Map<Fluid, FluidModel>> original) {
+		Map<Fluid, FluidModel> models = new IdentityHashMap<>(vanillaModels);
 		Map<FluidModel.Unbaked, FluidModel> bakedModels = new IdentityHashMap<>();
 
 		for (Map.Entry<Fluid, FluidModel.Unbaked> entry : FluidRenderingRegistryImpl.getUnbakedModels().entrySet()) {
@@ -49,6 +51,6 @@ public abstract class FluidStateModelSetMixin {
 			models.put(entry.getKey(), model);
 		}
 
-		return Collections.unmodifiableMap(models);
+		return original.call(models, materials);
 	}
 }
