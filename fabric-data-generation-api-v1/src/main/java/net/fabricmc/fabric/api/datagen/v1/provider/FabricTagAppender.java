@@ -16,6 +16,7 @@
 
 package net.fabricmc.fabric.api.datagen.v1.provider;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -74,7 +75,7 @@ public interface FabricTagAppender<T> extends ITagAppenderExtension<T> {
 	 * @return this, for chaining
 	 */
 	default TagAppender<T> remove(final ResourceKey<T>... elements) {
-		throw new AssertionError("Implemented via mixin");
+		return removeAll(Arrays.stream(elements));
 	}
 
 	/**
@@ -84,7 +85,7 @@ public interface FabricTagAppender<T> extends ITagAppenderExtension<T> {
 	 * @return this, for chaining
 	 */
 	default TagAppender<T> removeAll(final Collection<ResourceKey<T>> elements) {
-		throw new AssertionError("Implemented via mixin");
+		return removeAll(elements.stream());
 	}
 
 	/**
@@ -94,7 +95,9 @@ public interface FabricTagAppender<T> extends ITagAppenderExtension<T> {
 	 * @return this, for chaining
 	 */
 	default TagAppender<T> removeAll(final Stream<ResourceKey<T>> elements) {
-		throw new AssertionError("Implemented via mixin");
+		// Neo: TagAppender implements ITagAppenderExtension#remove(ResourceKey)
+		elements.forEach(((ITagAppenderExtension<T>) this)::remove);
+		return (TagAppender<T>) this;
 	}
 
 	/**
@@ -104,7 +107,8 @@ public interface FabricTagAppender<T> extends ITagAppenderExtension<T> {
 	 * @return this, for chaining
 	 */
 	default TagAppender<T> removeTag(TagKey<T> tag) {
-		throw new AssertionError("Implemented via mixin");
+		// Neo: TagAppender implements ITagAppenderExtension#remove(TagKey)
+		return ((ITagAppenderExtension<T>) this).remove(tag);
 	}
 
 	default TagBuilder getBuilder() {

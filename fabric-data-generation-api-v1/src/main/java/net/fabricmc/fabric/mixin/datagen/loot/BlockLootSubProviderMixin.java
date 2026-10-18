@@ -16,10 +16,8 @@
 
 package net.fabricmc.fabric.mixin.datagen.loot;
 
-import java.util.Iterator;
-
-import com.google.common.collect.Iterators;
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.google.common.collect.Iterables;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -33,10 +31,11 @@ import net.fabricmc.fabric.api.datagen.v1.loot.FabricBlockLootSubProvider;
 
 @Mixin(BlockLootSubProvider.class)
 public class BlockLootSubProviderMixin implements FabricBlockLootSubProvider {
-	@ModifyExpressionValue(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/DefaultedRegistry;iterator()Ljava/util/Iterator;"))
-	private Iterator<Block> onlyVanillaBlocks(Iterator<Block> blocks) {
+	// Neo: run() iterates NeoForge's overridable getKnownBlocks() instead of the block registry
+	@ModifyReturnValue(method = "getKnownBlocks", at = @At("RETURN"))
+	private Iterable<Block> onlyVanillaBlocks(Iterable<Block> blocks) {
 		if ((Object) this instanceof VanillaBlockLoot) {
-			return Iterators.filter(blocks, block -> BuiltInRegistries.BLOCK.getKey(block).getNamespace().equals(Identifier.DEFAULT_NAMESPACE));
+			return Iterables.filter(blocks, block -> BuiltInRegistries.BLOCK.getKey(block).getNamespace().equals(Identifier.DEFAULT_NAMESPACE));
 		}
 
 		return blocks;

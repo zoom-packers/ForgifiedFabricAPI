@@ -32,7 +32,8 @@ import net.fabricmc.fabric.api.datagen.v1.loot.FabricEntityLootSubProvider;
 
 @Mixin(EntityLootSubProvider.class)
 public class EntityLootSubProviderMixin implements FabricEntityLootSubProvider {
-	@ModifyExpressionValue(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/data/loot/LootTableSubProvider$Context;listContextElements(Lnet/minecraft/resources/ResourceKey;)Ljava/util/stream/Stream;"))
+	// Neo: the entity type listing moved from run() into NeoForge's overridable getKnownEntityTypes()
+	@ModifyExpressionValue(method = "getKnownEntityTypes", at = @At(value = "INVOKE", target = "Lnet/minecraft/data/loot/LootTableSubProvider$Context;listContextElements(Lnet/minecraft/resources/ResourceKey;)Ljava/util/stream/Stream;"))
 	private Stream<Holder.Reference<EntityType<?>>> onlyVanillaEntities(Stream<Holder.Reference<EntityType<?>>> entities) {
 		if ((Object) this instanceof VanillaEntityLoot) {
 			return entities.filter(entity -> entity.key().identifier().getNamespace().equals(Identifier.DEFAULT_NAMESPACE));

@@ -74,6 +74,8 @@ afterEvaluate {
 }
 val ENABLE_RECOMP_FOR = listOf(
     "fabric-data-attachment-api-v1",
+    // runDatagen: the binary interface injector breaks generic injected interfaces (FabricTagAppender<T>)
+    "fabric-data-generation-api-v1",
     "fabric-object-builder-api-v1",
     "fabric-rendering-v1"
 )
