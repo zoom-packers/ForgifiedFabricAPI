@@ -32,6 +32,7 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.fabricmc.fabric.api.networking.v1.ServerConfigurationNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.impl.networking.NetworkingImpl;
+import net.fabricmc.fabric.impl.networking.server.ServerNetworkingImpl;
 
 @Mixin(NetworkRegistry.class)
 public class NetworkRegistryMixin {
@@ -50,11 +51,12 @@ public class NetworkRegistryMixin {
 		ClientboundCustomPayloadPacket customPayloadPacket = (ClientboundCustomPayloadPacket) packet;
 		Type<?> type = customPayloadPacket.payload().type();
 
-		if (listener instanceof ServerConfigurationPacketListenerImpl impl && ServerConfigurationNetworking.canSend(impl, type)) {
+		// ZP5: listeners created without Fabric's login path (embedded game-test players) have no addon; skip the Fabric check for them
+		if (listener instanceof ServerConfigurationPacketListenerImpl impl && ServerNetworkingImpl.getAddon(impl) != null && ServerConfigurationNetworking.canSend(impl, type)) {
 			ci.cancel();
 		}
 
-		if (listener instanceof ServerGamePacketListenerImpl impl && ServerPlayNetworking.canSend(impl, type)) {
+		if (listener instanceof ServerGamePacketListenerImpl impl && ServerNetworkingImpl.getAddon(impl) != null && ServerPlayNetworking.canSend(impl, type)) {
 			ci.cancel();
 		}
 
