@@ -78,6 +78,11 @@ public final class EntityEventHooks {
 	
 	@SubscribeEvent
 	public static void tryRemoveEffect(MobEffectEvent.Remove event) {
+		// Like upstream (fabric-api#5121): don't ask listeners about effects the entity doesn't have
+		if (event.getEffectInstance() == null || event.getEntity().level().isClientSide()) {
+			return;
+		}
+
 		if (!ServerMobEffectEvents.ALLOW_EARLY_REMOVE.invoker().allowEarlyRemove(event.getEffectInstance(), event.getEntity(), MobEffectUtil.getCommandContext())) {
 			event.setCanceled(true);
 		}

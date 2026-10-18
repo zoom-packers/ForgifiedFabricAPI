@@ -55,8 +55,8 @@ println("Version: $version")
 
 val injectedInterfaces = configurations.create("injectedInterfaces")
 
-// 26.3: the root project no longer applies the modules' interface injection data to its own (non-recompiled)
-// Minecraft jar. NeoForge's binary injector (installertools 4.0.12) writes generic arguments into the
+// The root project does not apply the modules' interface injection data to its own (non-recompiled)
+// Minecraft jar. NeoForge's binary injector (installertools 4.0.12, also on 26.2) writes generic arguments into the
 // interface class name ("FabricEntityType$Builder<T>"), which breaks the root gametest/client runs. At runtime
 // the interfaces come from FFAPI's mixins anyway, like in production. The data is still merged and published.
 val moduleInterfaceInjectionData: Configuration = configurations.create("moduleInterfaceInjectionData") {

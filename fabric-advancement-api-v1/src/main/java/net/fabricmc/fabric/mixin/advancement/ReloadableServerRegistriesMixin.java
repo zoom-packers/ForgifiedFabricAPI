@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.RegistryDataLoader;
@@ -38,11 +39,12 @@ import net.fabricmc.fabric.impl.advancement.AdvancementUtil;
 
 @Mixin(ReloadableServerRegistries.class)
 abstract class ReloadableServerRegistriesMixin {
-	@WrapOperation(method = "reload", at = @At(value = "INVOKE", target = "Lnet/minecraft/resources/RegistryDataLoader;load(Lnet/minecraft/server/packs/resources/ResourceManager;Ljava/util/List;Ljava/util/List;Ljava/util/concurrent/Executor;)Ljava/util/concurrent/CompletableFuture;"))
-	private static CompletableFuture<RegistryAccess.Frozen> modifyAdvancements(ResourceManager resourceManager, List<HolderLookup.RegistryLookup<?>> contextRegistries, List<RegistryDataLoader.RegistryData<?>> registriesToLoad, Executor executor, Operation<CompletableFuture<RegistryAccess.Frozen>> original, @Local(name = "loadingContextWithTags") HolderLookup.Provider provider) {
+	// Neo: ReloadableServerRegistries#reload calls NeoForge's overload of RegistryDataLoader#load that also takes the pending tags.
+	@WrapOperation(method = "reload", at = @At(value = "INVOKE", target = "Lnet/minecraft/resources/RegistryDataLoader;load(Lnet/minecraft/server/packs/resources/ResourceManager;Ljava/util/List;Ljava/util/List;Ljava/util/concurrent/Executor;Ljava/util/List;)Ljava/util/concurrent/CompletableFuture;"))
+	private static CompletableFuture<RegistryAccess.Frozen> modifyAdvancements(ResourceManager resourceManager, List<HolderLookup.RegistryLookup<?>> contextRegistries, List<RegistryDataLoader.RegistryData<?>> registriesToLoad, Executor executor, List<Registry.PendingTags<?>> pendingTags, Operation<CompletableFuture<RegistryAccess.Frozen>> original, @Local(name = "loadingContextWithTags") HolderLookup.Provider provider) {
 		AdvancementUtil.startReload(resourceManager, provider);
 
-		return original.call(resourceManager, contextRegistries, registriesToLoad, executor)
+		return original.call(resourceManager, contextRegistries, registriesToLoad, executor, pendingTags)
 				.thenApply(registries -> {
 					AdvancementEvents.ALL_LOADED.invoker().onAdvancementsLoaded(resourceManager, registries.lookupOrThrow(Registries.ADVANCEMENT), registries);
 					return registries;
